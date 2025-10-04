@@ -15,8 +15,8 @@ output & y_true structure:
 
 '''
 input: (B, A, K); output: scalar loss
-
 inputs: logits - results of prediction, y_true - class labels, alpha & gamma - values to adjust the weighitng of "hard" problems, typically 0.25 and 2, reduction - "mean", "sum" or "none"
+
 valid_mask: y_true holds negative values whenever an object shouldnt be detected in that cell, checking if y_true >= 0 and casting to float every negative space becomes a 0 and cancels, so we dont calculate loss on negative space
 ce: standard softmax cross entropy on the labels, tf.where is needed because the CE function cannot accept negative values
 
