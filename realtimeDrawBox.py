@@ -260,7 +260,7 @@ class YOLOv8TFLite:
 # Usage Example
 if __name__ == "__main__":
     # Initialize detector
-    detector = YOLOv8TFLite('yolov8m_saved_model/yolov8m_float16.tflite')
+    detector = YOLOv8TFLite('yolov8n_saved_model/yolov8n_float16.tflite')
     cam_manager = CamManager()
     ft = time.time()
 
