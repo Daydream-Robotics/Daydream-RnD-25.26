@@ -41,6 +41,7 @@ opencv-python
 opt_einsum
 optree
 packaging
+picamera2
 pillow
 polars
 protobuf
