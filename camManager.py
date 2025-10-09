@@ -1,4 +1,5 @@
 from picamera2 import Picamera2
+from libcamera import controls
 import numpy as np
 
 class CamManager:
@@ -10,8 +11,13 @@ class CamManager:
         self.picam2.video_configuration.controls.FrameRate = 120
         self.picam2.configure("video")
 
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+
         self.picam2.start()
 
 
     def getCamNumpy(self):
         return self.picam2.capture_array("main")
+    
+    def getCamPIL(self):
+        return self.picam2.capture_image("main")
