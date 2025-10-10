@@ -78,7 +78,7 @@ def huber(prediction, target, valid_mask, delta=2.0, reduction="mean"):
     loss = per_cell * valid_mask
 
     if reduction == "mean":
-        denom = tf.reduce_sum(pos_mask) + 1e-8
+        denom = tf.reduce_sum(valid_mask) + 1e-8
         return tf.reduce_sum(loss) / denom
     elif reduction == "sum":
         return tf.reduce_sum(loss)
