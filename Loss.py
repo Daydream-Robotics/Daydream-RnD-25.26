@@ -51,7 +51,10 @@ def huber(prediction, target, valid_mask, delta=2.0, reduction="mean"):
     else:
         return loss
     
-def total_loss(pred_heatmap, y_heatmap, pred_offset, y_offset, valid_mask, alpha, gamma, delta, reduction, cls_weights=1.0, offset_weights=1.0):
+def total_loss(pred_heatmap, y_heatmap, pred_offset, y_offset, valid_mask, alpha, gamma, delta, reduction, lambda_cls=1.0, lambda_offset=1.0):
     valid_mask = tf.cast(pred_heatmap >= 0, tf.float32)
 
     cls_loss = focal_softmax(pred_heatmap, y_heatmap, valid_mask, alpha, gamma, reduction)
+    offset_loss = huber(pred_offset, y_offset, valid_mask, delta, reduction)
+
+    return (lambda_cls * cls_loss) + (lambda_offset * offset_loss)
