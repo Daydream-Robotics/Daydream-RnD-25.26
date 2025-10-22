@@ -2,11 +2,11 @@ import tensorflow as tf
 import json, time, math
 from pathlib import Path
 
+# CONFIG
 
 DATA_DIR = Path("/home/agn/Datasets/Dataset-Raw")
 OUT_PATH = "/home/agn/Datasets/train.tfrecord"
 
-# Dictionary of classes
 classes = {
     "RedBall": 0,
     "BlueBall": 1,
@@ -15,13 +15,15 @@ classes = {
     "MiddleGoalBottom": 4
 }
 
-# TensorFlow declarations
 def _bytes_feature(b): return tf.train.Feature(bytes_list=tf.train.BytesList(value=[b]))
 def _int64_feature(v): return tf.train.Feature(int64_list=tf.train.Int64List(value=v))
 def _float_feature(v): return tf.train.Feature(float_list=tf.train.FloatList(value=v))
 
+# --------------------------------
+# Create Tensorflow Example (tf.train.Example)
+# DO NOT CALL
+# --------------------------------
 
-# For each JSON file, convert it to TF Example
 def make_example(stem: str):
     img_path = DATA_DIR / f"{stem}.png"
     json_path = DATA_DIR / f"{stem}.json"
@@ -68,7 +70,12 @@ def make_example(stem: str):
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
-#time it
+# --------------------------------
+# Main
+# DO NOT CALL
+# --------------------------------
+
+#Begin Timer
 start = time.time()
 
 # Sort jsons and pngs
@@ -89,7 +96,7 @@ print(f"✅ Wrote {count} examples to {OUT_PATH} over {elapsed:.2f} seconds")
 filenames = [OUT_PATH]
 tfr_dataset = tf.data.TFRecordDataset(filenames)
 
-#Print out first record in the dataset
+#Print out first record in the dataset for verification
 for record in tfr_dataset.take(1):
     example = tf.train.Example()
     example.ParseFromString(record.numpy())
