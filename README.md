@@ -53,7 +53,7 @@ Create `training.py` to:
 ## 🛠 Example Usage
 
 ```bash
-# Generate TFRecord
+# Generate TFRecord (adjust DATA_DIR and OUT_PATH to specifications)
 python RAWtoTFR.py
 
 # Train model (after training.py is created)
