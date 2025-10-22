@@ -1,6 +1,8 @@
 import tensorflow as tf
-import json, time
+import json, time, math
 from pathlib import Path
+
+
 DATA_DIR = Path("/home/agn/Datasets/Dataset-Raw")
 OUT_PATH = "/home/agn/Datasets/train.tfrecord"
 
@@ -17,6 +19,7 @@ classes = {
 def _bytes_feature(b): return tf.train.Feature(bytes_list=tf.train.BytesList(value=[b]))
 def _int64_feature(v): return tf.train.Feature(int64_list=tf.train.Int64List(value=v))
 def _float_feature(v): return tf.train.Feature(float_list=tf.train.FloatList(value=v))
+
 
 # For each JSON file, convert it to TF Example
 def make_example(stem: str):

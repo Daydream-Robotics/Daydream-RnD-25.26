@@ -4,6 +4,28 @@ from keras import Model, layers
 from keras import losses, optimizers, metrics
 import datetime
 
+
+
+
+
+
+# --------------------------------
+# OUTDATED - DO NOT CALL
+# --------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 '''
 output & y_true structure:
     logits: (batch, x, y, K) - class labels per object

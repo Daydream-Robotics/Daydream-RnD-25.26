@@ -3,9 +3,18 @@ from keras import layers, models, optimizers, regularizers
 import tensorboard
 import datetime
 
-l2_reg = regularizers.l2(1e-3)
 
-def bottleneck_block(x, expansion_factor, out_channels, stride, name=None):
+# CONFIG
+
+l2_reg = regularizers.l2(1e-3) # controls how much weight decay there is
+
+
+# --------------------------------
+# Inverted Residual Linear Bottleneck
+# DO NOT CALL
+# --------------------------------
+
+def _bottleneck_block(x, expansion_factor, out_channels, stride, name=None):
     in_channels = x.shape[-1]
     expanded_channels = in_channels * expansion_factor
 
@@ -30,11 +39,17 @@ def bottleneck_block(x, expansion_factor, out_channels, stride, name=None):
     else:
         return x_proj
     
-def repeat_bottlenecks(x, expansion_factor, out_channels, repeats, stride, name_prefix):
+def _repeat_bottlenecks(x, expansion_factor, out_channels, repeats, stride, name_prefix):
     for i in range(repeats):
         s = stride if i == 0 else 1
-        x = bottleneck_block(x, expansion_factor, out_channels, s, name=f"{name_prefix}_{i}")
+        x = _bottleneck_block(x, expansion_factor, out_channels, s, name=f"{name_prefix}_{i}")
     return x
+
+
+# --------------------------------
+# Model Backbone
+# CALL - from model import backbone
+# --------------------------------
     
 def backbone(input_shape=(320,320,3)):
     inputs = layers.Input(shape=input_shape)
@@ -47,17 +62,17 @@ def backbone(input_shape=(320,320,3)):
     x = layers.ReLU(6)(x)
 
     #Bottlenecks
-    x = bottleneck_block(x, 1, 16, 1, name="bneck_1") # 160x160 x 32 in 80x80 x 16 out
-    x = repeat_bottlenecks(x, 6, 24, 2, 2, name_prefix="bneck_2") # 80x80 x 16 in 80x80 x 24 out
-    x = repeat_bottlenecks(x, 6, 32, 3, 1,name_prefix="bneck_3") # 80x80 x 24 in 80x80 x 32 out
-    x = repeat_bottlenecks(x, 6, 64, 3, 1, name_prefix="bneck_4") # 80x80 x 32 in 80x80 x 64 out
-    x = repeat_bottlenecks(x, 6, 96, 3, 2, name_prefix="bneck_5") # 80x80 x 64 in 40x40 x 96 out
-    x = repeat_bottlenecks(x, 6, 128, 2, 1, name_prefix="bneck_6") # 40x40 x 96 in 40x40 x 128 out
+    x = _bottleneck_block(x, 1, 16, 1, name="bneck_1") # 160x160 x 32 in 80x80 x 16 out
+    x = _repeat_bottlenecks(x, 6, 24, 2, 2, name_prefix="bneck_2") # 80x80 x 16 in 80x80 x 24 out
+    x = _repeat_bottlenecks(x, 6, 32, 3, 1,name_prefix="bneck_3") # 80x80 x 24 in 80x80 x 32 out
+    x = _repeat_bottlenecks(x, 6, 64, 3, 1, name_prefix="bneck_4") # 80x80 x 32 in 80x80 x 64 out
+    x = _repeat_bottlenecks(x, 6, 96, 3, 2, name_prefix="bneck_5") # 80x80 x 64 in 40x40 x 96 out
+    x = _repeat_bottlenecks(x, 6, 128, 2, 1, name_prefix="bneck_6") # 40x40 x 96 in 40x40 x 128 out
 
     # TAP
     p8 = x
 
-    x = repeat_bottlenecks(x, 6, 160, 1, 1, name_prefix="bneck_7") # 40x40x128 in 20x20x160 out
+    x = _repeat_bottlenecks(x, 6, 160, 1, 1, name_prefix="bneck_7") # 40x40x128 in 20x20x160 out
     p16 = x
 
     return models.Model(inputs, [p8, p16], name="backbone")
