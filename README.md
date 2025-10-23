@@ -6,18 +6,18 @@ This project implements a lightweight object detection pipeline using **centroid
 
 ## 📋 Table of Contents
 
-- [Introduction](#introduction)
-- [Components](#components)
-- [Data Format](#data-format)
-- [Model Architecture](#model-architecture)
-- [Loss Functions](#loss-functions)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Examples](#examples)
-- [Configuration](#configuration)
-- [Troubleshooting](#troubleshooting)
-- [Contributors](#contributors)
-- [License](#license)
+- [Introduction](##introduction)
+- [Components](##components)
+- [Data Format](##data-format)
+- [Model Architecture](##model-architecture)
+- [Loss Functions](##loss-functions)
+- [Installation](##installation)
+- [Usage](##usage)
+- [Examples](##examples)
+- [Configuration](##configuration)
+- [Troubleshooting](##troubleshooting)
+- [Contributors](##contributors)
+- [License](##license)
 
 ---
 
