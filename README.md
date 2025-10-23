@@ -177,7 +177,7 @@ Modify the following parameters in `trainModel.py` as needed:
 
 ## 👥 Contributors
 
-- [Alexander Nardi] — Creator
+- Alexander Nardi — Creator
 - [UCF7 - Daydream]
 - Open to community contributions!
 
