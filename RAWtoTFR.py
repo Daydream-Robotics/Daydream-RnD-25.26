@@ -1,11 +1,13 @@
 import tensorflow as tf
-import json, time, math
+import json, time, math, random
 from pathlib import Path
 
 # CONFIG
-
 DATA_DIR = Path("/home/agn/Datasets/Dataset-Raw")
-OUT_PATH = "/home/agn/Datasets/train.tfrecord"
+OUT_TRAIN = "/home/agn/Datasets/train.tfrecord"
+OUT_VAL = "/home/agn/Datasets/val.tfrecord"
+
+SPLIT_RATIO = 0.8  # 80% train / 20% val
 
 classes = {
     "RedBall": 0,
@@ -21,19 +23,16 @@ def _float_feature(v): return tf.train.Feature(float_list=tf.train.FloatList(val
 
 # --------------------------------
 # Create Tensorflow Example (tf.train.Example)
-# DO NOT CALL
 # --------------------------------
-
 def make_example(stem: str):
     img_path = DATA_DIR / f"{stem}.png"
     json_path = DATA_DIR / f"{stem}.json"
 
-    # Ensure both img path and json path exist (skips stuff like _camera_settings and _object_settings)
+    # Skip if either file missing
     if not img_path.exists() or not json_path.exists():
         print(f"⚠️ Skipping {stem} (missing pair)")
         return None
 
-    # Read in data
     img_bytes = img_path.read_bytes()
     label_json = json.loads(json_path.read_text())
 
@@ -41,23 +40,17 @@ def make_example(stem: str):
     img = tf.io.decode_png(img_bytes, channels=3)
     h, w = img.shape[0], img.shape[1]
 
-    # Declaring feature vars
     cls, xs, ys = [], [], []
-
-    # Parse json for "projected_cuboid_centroid" and "class"
     for o in label_json.get("objects", []):
-        if "projected_cuboid_centroid" not in o:
+        if "projected_cuboid_centroid" not in o or "class" not in o:
             continue
-        if "class" not in o:
+        if o["class"] not in classes:
             continue
         x, y = o["projected_cuboid_centroid"]
-        if o["class"] not in classes:
-            continue  # skip unknown labels
         cls.append(classes[o["class"]])
-        xs.append(float(x) / w) 
+        xs.append(float(x) / w)
         ys.append(float(y) / h)
 
-    # assign features
     feature = {
         "image/encoded": _bytes_feature(img_bytes),
         "image/height": _int64_feature([h]),
@@ -70,38 +63,46 @@ def make_example(stem: str):
 
     return tf.train.Example(features=tf.train.Features(feature=feature))
 
+
 # --------------------------------
 # Main
-# DO NOT CALL
 # --------------------------------
-
-#Begin Timer
 start = time.time()
 
-# Sort jsons and pngs
+# Collect & shuffle stems
 pairs = sorted(p.stem for p in DATA_DIR.glob("*.json"))
+random.shuffle(pairs)
 
-#Write as TFRecord
-count = 0
-with tf.io.TFRecordWriter(OUT_PATH) as writer:
-    for stem in pairs:
-        example = make_example(stem)
-        if example is not None:
-            writer.write(example.SerializeToString())
-            count += 1
+# Split 80/20
+split_idx = int(len(pairs) * SPLIT_RATIO)
+train_pairs = pairs[:split_idx]
+val_pairs = pairs[split_idx:]
 
+def write_tfrecord(pairs, out_path):
+    count = 0
+    with tf.io.TFRecordWriter(out_path) as writer:
+        for stem in pairs:
+            example = make_example(stem)
+            if example is not None:
+                writer.write(example.SerializeToString())
+                count += 1
+    return count
+
+# Write train + val files
+train_count = write_tfrecord(train_pairs, OUT_TRAIN)
+val_count = write_tfrecord(val_pairs, OUT_VAL)
+
+# Print with verify
 elapsed = time.time() - start
-print(f"✅ Wrote {count} examples to {OUT_PATH} over {elapsed:.2f} seconds")
+print(f"✅ Wrote {train_count} training examples to {OUT_TRAIN}")
+print(f"✅ Wrote {val_count} validation examples to {OUT_VAL}")
+print(f"⏱️ Total time: {elapsed:.2f}s")
 
-filenames = [OUT_PATH]
-tfr_dataset = tf.data.TFRecordDataset(filenames)
-
-#Print out first record in the dataset for verification
+# Verification step (first record from train)
+tfr_dataset = tf.data.TFRecordDataset([OUT_TRAIN])
 for record in tfr_dataset.take(1):
     example = tf.train.Example()
     example.ParseFromString(record.numpy())
-
-    # Print selected fields only (we dont need the whole serialized png to be printed)
     f = example.features.feature
     print("Classes:", f["objects/classes"].int64_list.value)
     print("Xs:", f["objects/xs"].float_list.value)

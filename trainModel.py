@@ -12,8 +12,8 @@ from dataloader import get_dataset
 # Train parameters
 BATCH_SIZE = 16
 EPOCHS = 50
-TFRECORD_PATH = [""]
-VALIDATION_PATH = [""]
+TRAIN_PATH = [""]
+VAL_PATH = [""]
 INPUT_SHAPE = (320,320,3)
 
 # Loss parameters
@@ -29,8 +29,8 @@ LAMBDA_OFFSET = 1.0
 # Datasets
 # --------------------------------
 
-train_ds = get_dataset(TFRECORD_PATH, BATCH_SIZE, shuffle_buffer=256, training=True)
-val_ds = get_dataset(VALIDATION_PATH, BATCH_SIZE, shuffle_buffer=256, training=False)
+train_ds = get_dataset(TRAIN_PATH, batch_size=16, shuffle_buffer=256, training=True)
+val_ds = get_dataset(VAL_PATH, batch_size=16, shuffle_buffer=256, training=False)
 
 # --------------------------------
 # Model Backbone & Setup
