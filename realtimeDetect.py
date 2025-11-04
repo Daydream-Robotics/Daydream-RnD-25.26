@@ -158,7 +158,7 @@ class Detector:
             return {'boxes': np.array([]), 'scores': np.array([]), 'class_ids': np.array([]), 'coords': coords[indices]}
     
 
-    def draw_detections(self, input_image, detections, thickness=3, font_scale=0.6):
+    def draw_detections(self, input_image, thickness=3, font_scale=0.6):
         """
         Draw bounding boxes and labels on the image
         
@@ -172,6 +172,23 @@ class Detector:
             PIL Image with drawn boxes
         """
 
+        # Converts to corner format
+        x1 = self.x_center - self.width / 2
+        y1 = self.y_center - self.height / 2
+        x2 = self.x_center + self.width / 2
+        y2 = self.y_center + self.height / 2
+        
+        boxes = np.stack([x1, y1, x2, y2], axis=1)
+        coords = np.stack([self.x_center, self.y_center, self.width, self.height], axis=1)
+
+        # Apply NMS
+        indices = cv2.dnn.NMSBoxes(
+            boxes.tolist(),
+            self.confidences.tolist(),
+            self.conf_threshold,
+            self.iou_threshold
+        )
+
         # Convert PIL to numpy if needed
         if isinstance(input_image, Image.Image):
             image_array = np.array(input_image)
@@ -181,9 +198,9 @@ class Detector:
         # Convert RGB to BGR for OpenCV
         img_bgr = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
         
-        boxes = detections['boxes']
-        scores = detections['scores']
-        class_ids = detections['class_ids']
+        boxes = boxes[indices]
+        scores = self.confidences[indices]
+        class_ids = self.class_ids[indices]
         
         for box, score, class_id in zip(boxes, scores, class_ids):
             x1, y1, x2, y2 = box.astype(int)
@@ -231,7 +248,6 @@ class Detector:
     
 MODEL = 'yolov8n_saved_model/yolov8n_float16.tflite'
 detector = Detector(MODEL)
-
 
 def step(conf_threshold=0.25):
     input_image = cammanager.getCamPIL()
