@@ -51,7 +51,7 @@ def _repeat_bottlenecks(x, expansion_factor, out_channels, repeats, stride, name
 # CALL - from model import backbone
 # --------------------------------
     
-def backbone(input_shape=(320,320,3)):
+def backbone(input_shape=(512,512,3)):
     inputs = layers.Input(shape=input_shape)
 
     # x = prediction
@@ -72,7 +72,7 @@ def backbone(input_shape=(320,320,3)):
     # TAP
     p8 = x
 
-    x = _repeat_bottlenecks(x, 6, 160, 1, 1, name_prefix="bneck_7") # 40x40x128 in 20x20x160 out
+    x = _repeat_bottlenecks(x, 6, 160, 1, 2, name_prefix="bneck_7") # 40x40x128 in 20x20x160 out
     p16 = x
 
     return models.Model(inputs, [p8, p16], name="backbone")

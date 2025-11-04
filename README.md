@@ -57,13 +57,12 @@ TFRecord examples are generated from:
 
 ### Supported Classes
 
-| ID | Class            |
-|----|------------------|
-| 0  | RedBall          |
-| 1  | BlueBall         |
-| 2  | LongGoal         |
-| 3  | MiddleGoalTop    |
-| 4  | MiddleGoalBottom |
+| ID | Class      |
+|----|------------|
+| 0  | RedBall    |
+| 1  | BlueBall   |
+| 2  | Fillet5    |
+| 3  | Mirror1_2  |
 
 ---
 
@@ -76,7 +75,7 @@ The model backbone is MobileNet-inspired, with inverted bottleneck blocks and re
 - `p16` → shape: **(20×20×C)**
 
 ### Heads:
-- **Heatmap Head**: 5 channels (one per class)
+- **Heatmap Head**: 4 channels (one per class)
 - **Offset Head**: 2 channels (x and y offsets)
 
 ---
