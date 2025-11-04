@@ -233,7 +233,7 @@ MODEL = 'yolov8n_saved_model/yolov8n_float16.tflite'
 detector = Detector(MODEL)
 
 
-def step(conf_threshold):
+def step(conf_threshold=0.25):
     input_image = cammanager.getCamPIL()
 
     detections = detector.predict(
@@ -241,7 +241,7 @@ def step(conf_threshold):
         conf_threshold=conf_threshold
     )
 
-    return detections
+    return detections.tolist()
 
 
 
