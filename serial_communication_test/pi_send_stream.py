@@ -7,6 +7,8 @@ import numpy as np
 SERIAL_PORT = '/dev/ttyACM1'
 BAUD_RATE = 115200
 
+DEBUG = True
+
 try:
     ser = serial.Serial(
         port=SERIAL_PORT,
@@ -35,7 +37,17 @@ def run_cnn_and_get_output():
 
 def main_loop():
     while True:
+        #if input stream contains more than 0 bytes (non-blocking)
+        if DEBUG:
+            if ser.in_waiting > 0:
+                #read and store '\n' terminated line from input stream
+                input_string = ser.readline().decode('utf-8').strip()
+                print(f"VEX: {input_string}")
+
         objects = run_cnn_and_get_output()        
+
+        if objects is None:
+            continue
 
         if len(objects) == 0:
             continue
