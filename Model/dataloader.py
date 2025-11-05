@@ -63,13 +63,14 @@ def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA)
         y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
 
         # Grid indices (use floor for consistency with offset logic)
-        gx = tf.cast(tf.floor(x_norm * tf.cast(W, tf.float32)), tf.int32)
-        gy = tf.cast(tf.floor(y_norm * tf.cast(H, tf.float32)), tf.int32)
+        gx = tf.cast(tf.floor(x_norm * tf.cast(W, tf.float32) + 0.5), tf.int32)
+        gy = tf.cast(tf.floor(y_norm * tf.cast(H, tf.float32) + 0.5), tf.int32)
 
         # Clamp to valid bounds in case x==W or y==H
         gx = tf.clip_by_value(gx, 0, W - 1)
         gy = tf.clip_by_value(gy, 0, H - 1)
 
+        # *CHECK FOR BOUNDS ISSUE
         half = g_size // 2
 
         # Compute patch coordinates in image space
