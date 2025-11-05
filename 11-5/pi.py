@@ -22,35 +22,32 @@ except serial.SerialException as e:
     print(f"Error opening serial port: {e}")
     exit()
 
-# Assume this method runs your CNN and returns the results
 def run_cnn_and_get_output():
     
-    # returns 2d np array that contains detected object
-    # class_id, condfidence, x_center, y_center
-    # NOTE: Using a placeholder value for step time
+    #returns 2d np array that contains detected object
+    #class_id, condfidence, x_center, y_center
     np_list = realtimeDetect.step(0.25)
     
     return np_list
 
 def main_loop():
     while True:
-        # if input stream contains more than 0 bytes (non-blocking)
+        #if input stream contains more than 0 bytes
         if ser.in_waiting > 0:
             
-            # read and store '\n' terminated line from input stream
-            # This is the expected 'REQUEST_OBJECT_DATA' trigger
+            #read and store '\n' terminated line from input buffer
             input_string = ser.readline().decode('utf-8').strip()
             
             if "REQUEST_OBJECT_DATA" in input_string:
                 print(f"<{input_string}> RECEIVED")
                 
-                # detected object data
+                #detected object data
                 np_list = run_cnn_and_get_output()
                 if np_list is not None:
-                    # 1. Send object count
+                    #send object count
                     data_string = f"{len(np_list)}"
                     payload = (data_string + '\n').encode('utf-8')
-                    # output to vex
+                    #output to vex
                     try:
                         ser.write(payload)
                         print(f"Sent: {data_string}")
@@ -58,7 +55,6 @@ def main_loop():
                         print(f"Error writing count to serial port: {e}")
                         exit()
 
-                    # 2. Send object details
                     for object in np_list:
                         conf = object[1]
                         x = object[2]
@@ -67,10 +63,10 @@ def main_loop():
                         
                         data_string = f"{conf:.2f},{x},{y},{int(class_id)}"
                         
-                        # Append the newline terminator and encode to bytes
+                        #append the newline terminator and encode to bytes
                         payload = (data_string + '\n').encode('utf-8')
                         
-                        # output to vex
+                        #output to vex
                         try:
                             ser.write(payload)
                             print(f"Sent: {data_string}")
@@ -78,37 +74,88 @@ def main_loop():
                             print(f"Error writing object data to serial port: {e}")
                             exit()
 
-                    # 3. CRITICAL SYNCHRONIZATION FIX (CORRECTLY INDENTED)
-                    # This block runs ONCE after all data is sent.
+
+                    #prep input buffer for vex debugging output 
                     
-                    # Give the VEX a small moment (50ms) to print all its status/ACK messages. 
-                    # This MUST be shorter than the VEX's 200ms polling delay.
+                    #print all debugging output 
+                    #duration must be shorter than VEX's 200ms polling delay
                     print("Waiting 50ms for VEX ACKs to buffer...")
                     time.sleep(0.05) 
                     
-                    # Now, read ALL bytes that have accumulated in the buffer (NON-BLOCKING DRAIN).
+                    #read input buffer
                     if ser.in_waiting > 0:
                         try:
-                            # Read all available bytes and decode, ignoring errors
+                            #read all available bytes and decode, ignoring errors
                             vex_output_bytes = ser.read(ser.in_waiting)
                             vex_output = vex_output_bytes.decode('utf-8', errors='ignore')
                             
-                            # Print the drained data for debugging
+                            #print the drained data for debugging
                             if vex_output.strip():
-                                # The strip removes any leading/trailing whitespace including newlines
+                                #remove leading whtespace
                                 print(f"VEX ACKs Drained:\n{vex_output.strip()}")
 
                         except Exception as e:
                             print(f"Error draining buffer: {e}")
 
                     print("--- Cycle Synchronization complete ---")
-                    
-            else:
-                # Handle any other output from the V5 (like debug prints)
-                print(f"Input does not contain REQUEST_OBJECT_DATA it is: {input_string}")
+                else:
+                    #send object count
+                    data_string = f"{0}"
+                    payload = (data_string + '\n').encode('utf-8')
+                    #output to vex
+                    try:
+                        ser.write(payload)
+                        print(f"Sent: {data_string}")
+                    except serial.SerialTimeoutException as e:
+                        print(f"Error writing count to serial port: {e}")
+                        exit()
 
-        # small delay may also be needed to keep the loop from hogging CPU resources
-        # time.sleep(0.01)
+                    #Send None object details
+                    conf = 0.0
+                    x = 0.0
+                    y = 0.0
+                    class_id = -1
+                    
+                    data_string = f"{conf:.2f},{x},{y},{class_id}"
+                    
+                    #append the newline terminator and encode to bytes
+                    payload = (data_string + '\n').encode('utf-8')
+                    
+                    #output to vex
+                    try:
+                        ser.write(payload)
+                        print(f"Sent: {data_string}")
+                    except serial.SerialTimeoutException as e:
+                        print(f"Error writing object data to serial port: {e}")
+                        exit()
+
+
+                    #prep input buffer for vex debugging output 
+                    
+                    #print all debugging output 
+                    #duration must be shorter than VEX's 200ms polling delay
+                    print("Waiting 50ms for VEX ACKs to buffer...")
+                    time.sleep(0.05) 
+                    
+                    #read input buffer
+                    if ser.in_waiting > 0:
+                        try:
+                            #read all available bytes and decode, ignoring errors
+                            vex_output_bytes = ser.read(ser.in_waiting)
+                            vex_output = vex_output_bytes.decode('utf-8', errors='ignore')
+                            
+                            #print the drained data for debugging
+                            if vex_output.strip():
+                                #remove leading whtespace
+                                print(f"VEX ACKs Drained:\n{vex_output.strip()}")
+
+                        except Exception as e:
+                            print(f"Error draining buffer: {e}")
+
+                    print("--- Cycle Synchronization complete ---")
+            else:
+                #handle any other output from vex
+                print(f"Input does not contain REQUEST_OBJECT_DATA it is: {input_string}")
 
 if __name__ == "__main__":
     try:
