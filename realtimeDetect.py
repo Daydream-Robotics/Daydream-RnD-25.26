@@ -257,7 +257,17 @@ def step(conf_threshold=0.25):
         conf_threshold=conf_threshold
     )
 
-    return detections.tolist()
+    objects = []
+    for detection in detections:
+        object = {
+            "class_id": object[0],
+            "conf": detection[1],
+            "x": object[2],
+            "y": object[3]
+        }
+        objects.append(object)
+
+    return objects
 
 
 
