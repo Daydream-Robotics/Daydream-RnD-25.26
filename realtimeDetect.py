@@ -124,7 +124,7 @@ class Detector:
         self.width = width
         self.height = height
 
-        detections = np.stack([self.class_ids, self.confidences, self.x_center, self.y_center], axis=0)
+        detections = np.stack([self.class_ids, self.confidences, self.x_center, self.y_center], axis=1)
         return detections
 
     def _create_boxes(self):
@@ -258,14 +258,15 @@ def step(conf_threshold=0.25):
     )
 
     objects = []
-    for detection in detections:
-        object = {
-            "class_id": object[0],
-            "conf": detection[1],
-            "x": object[2],
-            "y": object[3]
-        }
-        objects.append(object)
+    if detections is not None:
+        for detection in detections:
+            object = {
+                "class_id": detection[0],
+                "conf": detection[1],
+                "x": detection[2],
+                "y": detection[3]
+            }
+            objects.append(object)
 
     return objects
 

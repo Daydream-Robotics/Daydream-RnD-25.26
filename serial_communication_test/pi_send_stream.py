@@ -37,6 +37,9 @@ def main_loop():
     while True:
         objects = run_cnn_and_get_output()        
 
+        if len(objects) == 0:
+            continue
+
         data_string = ""
         for i, object in enumerate(objects):
             if i > 0:
@@ -47,7 +50,7 @@ def main_loop():
         try:
             payload = (data_string + '\n').encode('utf-8')
             ser.write(payload)
-            print(f"Send: {data_string}")
+            print(f"Sent: {data_string}")
         except serial.SerialTimeoutException as e:
             #In case write timeout is exceeded
             print(f"Error writing to serial port: {e}")
