@@ -81,7 +81,10 @@ ObjectData* initialize_objectdata(){
     std::string input;
 	std::cin >> input;
 
-	std::cout << input << endl;
+	pros::lcd::set_text(1, input);
+
+	std::cout << input << std::endl;
+
 
 	//char array buffer to temporarly store pi output until '\n'
 	//buffer array size may be tuned for efficiency
@@ -158,11 +161,11 @@ ObjectData* initialize_objectdata(){
 	// 	printf("FAILED_INPUTSTREAM_READ\n");
 	// 	fflush(stdout);
 	// 	return NULL;
-	}
+	// }
 }
 
 void autonomous() {
-	ObjectData* detected_obj_arr = initialize_objectdata();
+	// ObjectData* detected_obj_arr = initialize_objectdata();
 	// Continuous loop to poll the vision system until the robot is disabled or communication fails
     while (true) {
         ObjectData* detected_obj_arr = initialize_objectdata();
