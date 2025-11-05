@@ -78,31 +78,29 @@ def main_loop():
                             print(f"Error writing to serial port: {e}")
                             #exit if ser.write(payload) fails
                             exit()
-                    # 3. CRITICAL SYNCHRONIZATION FIX: CONSUME VEX VERIFICATION OUTPUT
-                    # This block drains the buffer, looking for the VEX's final acknowledgment
-                    # (like "DATA_STREAM_COMPLETE") to ensure the next line read is the next request.
-                    timeout_start = time.time()
-                    print("Waiting for VEX verification output (Draining Buffer)...")
-                    
-                    # Wait for up to 0.5 seconds, or until the buffer is empty
-                    while (time.time() - timeout_start < 0.5): 
+                        # 3. CRITICAL SYNCHRONIZATION FIX: CONSUME VEX VERIFICATION OUTPUT
+                        print("Waiting for VEX verification output (Draining Buffer)...")
+                        
+                        # Give the VEX 50ms to send its ACKs. This is a safe, small delay.
+                        # This MUST be shorter than the VEX's 200ms polling delay.
+                        time.sleep(0.05) 
+                        
+                        # Now, read ALL bytes that have accumulated in the buffer, however many there are.
+                        # This is NON-BLOCKING.
                         if ser.in_waiting > 0:
                             try:
-                                # Read the line sent by the VEX (its acknowledgment/status)
-                                vex_output = ser.readline().decode('utf-8').strip()
+                                # Read all available bytes and decode, ignoring errors
+                                vex_output_bytes = ser.read(ser.in_waiting)
+                                vex_output = vex_output_bytes.decode('utf-8', errors='ignore')
+                                
+                                # Print the drained data for debugging
                                 if vex_output:
-                                    print(f"VEX ACK: {vex_output}")
-                                    if "DATA_STREAM_COMPLETE" in vex_output or "DMA_FAILED" in vex_output:
-                                        # Exit early if the final signal is received
-                                        break 
-                            except serial.SerialTimeoutException:
-                                # This should not happen with ser.in_waiting check, but good practice
-                                break 
-                        else:
-                            # Sleep briefly if no data is currently available
-                            time.sleep(0.01)
+                                    print(f"VEX ACKs Drained:\n{vex_output.strip()}")
 
-                    print("--- Cycle Synchronization complete ---")
+                            except Exception as e:
+                                print(f"Error draining buffer: {e}")
+
+                        print("--- Cycle Synchronization complete ---")
             else:
                 # Handle any other output from the V5 (like debug prints)
                 print(f"Input does not contain REQUEST_OBJECT_DATA it is: {input_string}")
