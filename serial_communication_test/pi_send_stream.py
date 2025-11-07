@@ -56,7 +56,7 @@ def main_loop():
         for i, object in enumerate(objects):
             if i > 0:
                 data_string += "|"
-            data_string += f"c:{object['class_id']} x:{object['x']} y:{object['y']} conf:{object['conf']}"
+            data_string += f"{int(object['class_id'])} {int(object['x'])} {int(object['y'])} {object['conf']:.2f}"
 
         # output to vex
         try:
