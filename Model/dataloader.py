@@ -46,17 +46,20 @@ def _generate_gaussian_2d(size, sigma): # Generates a 2D Gaussian Kernel
     cy = (tf.cast(size[0], tf.float32) - 1.0) / 2.0
     return tf.exp(-((xx-cx)**2 + (yy-cy)**2) / (2.0*sigma**2))
 
-def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA): # Draws the P8 or P16 Heatmap
+def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA):
     H, W = out_hw
-    heatmap = tf.zeros((H, W, num_classes), dtype=tf.float32)
+    
+    # Gaussian radius (half-width in pixels)
     g_size = int(6 * sigma + 1)
+    half = g_size // 2
+
+    # PADDED heatmap to avoid border clipping
+    pad = half
+    heatmap = tf.zeros((H + 2*pad, W + 2*pad, num_classes), dtype=tf.float32)
+
+    # Full Gaussian kernel
     kernel = _generate_gaussian_2d((g_size, g_size), sigma)
 
-    # Autograph: predeclare vars used in loop body to avoid initialization errors
-    cls = tf.constant(0, dtype=tf.int32)
-    gx = gy = x0 = y0 = x1 = y1 = kx0 = ky0 = kx1 = ky1 = k_w = k_h = tf.constant(0, dtype=tf.int32)
-
-    # Iterates through class list and stamps gaussian for every class
     for i in tf.range(tf.shape(classes)[0]):
         cls = classes[i]
         x_norm = tf.clip_by_value(xs[i], 0.0, 1.0)
@@ -73,63 +76,50 @@ def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA)
         # *CHECK FOR BOUNDS ISSUE
         half = g_size // 2
 
-        # Compute patch coordinates in image space
-        x0 = gx - half
-        y0 = gy - half
-        x1 = gx + half + 1
-        y1 = gy + half + 1
+        # compute patch region in padded coords
+        x0 = gx_pad - half
+        y0 = gy_pad - half
+        x1 = gx_pad + half + 1
+        y1 = gy_pad + half + 1
 
-        # Compute kernel crop indices (kx0 etc.) based on how much falls outside
+        # crop kernel if it spills out of padded bounds (rare)
         kx0 = tf.maximum(0, -x0)
         ky0 = tf.maximum(0, -y0)
-        kx1 = g_size - tf.maximum(0, x1 - W)
-        ky1 = g_size - tf.maximum(0, y1 - H)
+        kx1 = g_size - tf.maximum(0, x1 - (W + 2*pad))
+        ky1 = g_size - tf.maximum(0, y1 - (H + 2*pad))
 
-        # Now clamp the image-space coordinates to bounds
+        # clamp image coords
         x0 = tf.maximum(0, x0)
         y0 = tf.maximum(0, y0)
-        x1 = tf.minimum(W, x1)
-        y1 = tf.minimum(H, y1)
+        x1 = tf.minimum(W + 2*pad, x1)
+        y1 = tf.minimum(H + 2*pad, y1)
 
-        # Only proceed if window is non-empty
-        k_w = x1 - x0
-        k_h = y1 - y0
-        
-        def do_scatter():
-            # Crop Gaussian accordingly
-            patch = kernel[ky0:ky1, kx0:kx1]
-            
-            # Get actual patch dimensions after slicing to ensure exact match
-            patch_h = tf.shape(patch)[0]
-            patch_w = tf.shape(patch)[1]
-            
-            # Build coordinate list for all pixels in patch - use actual patch dimensions
-            yy_range = tf.range(y0, y0 + patch_h, dtype=tf.int32)
-            xx_range = tf.range(x0, x0 + patch_w, dtype=tf.int32)
-            
-            # Create meshgrid using broadcasting to ensure exact dimension match
-            yy_expanded = tf.expand_dims(yy_range, 1)  # (patch_h, 1)
-            xx_expanded = tf.expand_dims(xx_range, 0)  # (1, patch_w)
-            yy_grid = tf.broadcast_to(yy_expanded, [patch_h, patch_w])  # (patch_h, patch_w)
-            xx_grid = tf.broadcast_to(xx_expanded, [patch_h, patch_w])  # (patch_h, patch_w)
-            
-            coords = tf.stack([yy_grid, xx_grid, tf.fill([patch_h, patch_w], cls)], axis=-1)
-            coords = tf.reshape(coords, [-1, 3])
-            values = tf.reshape(patch, [-1])
-            
-            # Stamp gaussian blur
-            return tf.tensor_scatter_nd_max(heatmap, coords, values)
-        
-        def skip_scatter():
-            return heatmap
-        
-        # Only scatter if we have valid window dimensions
-        heatmap = tf.cond(
-            tf.logical_and(k_w > 0, k_h > 0),
-            do_scatter,
-            skip_scatter
-        )
+        # final patch
+        patch = kernel[ky0:ky1, kx0:kx1]
+
+        # meshgrid for scatter
+        ph = tf.shape(patch)[0]
+        pw = tf.shape(patch)[1]
+
+        yy = tf.range(y0, y0 + ph, dtype=tf.int32)
+        xx = tf.range(x0, x0 + pw, dtype=tf.int32)
+
+        yy = tf.expand_dims(yy, 1)
+        xx = tf.expand_dims(xx, 0)
+
+        yy_grid = tf.broadcast_to(yy, [ph, pw])
+        xx_grid = tf.broadcast_to(xx, [ph, pw])
+
+        coords = tf.stack([yy_grid, xx_grid, tf.fill([ph, pw], cls)], axis=-1)
+        coords = tf.reshape(coords, [-1, 3])
+        values = tf.reshape(patch, [-1])
+
+        heatmap = tf.tensor_scatter_nd_max(heatmap, coords, values)
+
+    # crop back to original shape (center region)
+    heatmap = heatmap[pad:pad+H, pad:pad+W, :]
     return heatmap
+
 
 def _draw_offset_map(xs, ys, out_hw):
     """

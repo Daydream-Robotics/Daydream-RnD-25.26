@@ -3,8 +3,8 @@ import datetime, os
 from keras import layers, models, optimizers, callbacks
 from model import backbone
 from Loss import HeatmapLoss, OffsetLoss
-from metrics import PeakDetectionAccuracy, HeatmapPrecision, OffsetMAE, OffsetAccuracy
-from visualizer import visualize_allclass_heatmaps
+from metrics import NonAbsolutePeakAccuracy, PeakDetectionAccuracy, HeatmapPrecision, OffsetMAE, OffsetAccuracy
+from visualizer import visualize_batch_heatmaps, visualize_single_batch
 import matplotlib.pyplot as plt
 from dataloader import get_dataset, NUM_CLASSES
 
@@ -26,25 +26,24 @@ VAL_STEPS_PER_EPOCH = 150
 # Loss parameters
 ALPHA = 0.25
 GAMMA = 2.0
-DELTA = 2.0
+DELTA = 1.0
 REDUCTION = "mean" # "mean", "sum", or "none"
-LAMBDA_CLS = 1.0
-LAMBDA_OFFSET = 1.0
+LAMBDA_CLS = 2.0
+LAMBDA_OFFSET = 0.6
 
 
 # --------------------------------
 # Datasets
 # --------------------------------
 
-train_ds = get_dataset(TRAIN_PATH, batch_size=16, shuffle_buffer=256, training=True)
-val_ds = get_dataset(VAL_PATH, batch_size=16, shuffle_buffer=256, training=False)
+train_ds = get_dataset(TRAIN_PATH, BATCH_SIZE, shuffle_buffer=256, training=True)
+val_ds = get_dataset(VAL_PATH, BATCH_SIZE, shuffle_buffer=256, training=False)
 
-imgs, labels = next(iter(train_ds))
-img = imgs[0]
-p8_map = labels["p8"][0]
-p16_map = labels["p16"][0]
-
-visualize_allclass_heatmaps(img, p8_map, p16_map, )
+visualize_batch_heatmaps(
+    train_ds,
+    num_samples=100,
+    output_dir="/home/agn/ProgramSpace/TensorFlow/Daydream-RnD-25.26/Model/Visualized"
+)
 
 # --------------------------------
 # Model Backbone & Setup
@@ -94,7 +93,7 @@ for name, output in model.output.items():
 # --------------------------------
 
 model.compile(
-    optimizer=optimizers.Adam(learning_rate=1e-4, clipnorm=1.0),
+    optimizer=optimizers.Adam(learning_rate=3e-5, clipvalue=1.0),
     loss={
         "p8": HeatmapLoss(),
         "p16": HeatmapLoss(),
@@ -102,14 +101,14 @@ model.compile(
         "p16_off": OffsetLoss(delta=DELTA)
     },
     loss_weights={
-        "p8": 1.0,
-        "p16": 1.0,
-        "p8_off": 0.5,
-        "p16_off": 0.5
+        "p8": LAMBDA_CLS,
+        "p16": LAMBDA_CLS,
+        "p8_off": LAMBDA_OFFSET,
+        "p16_off": LAMBDA_OFFSET
     },
     metrics={
-        "p8": [PeakDetectionAccuracy(name='acc'), HeatmapPrecision(name='prec')],
-        "p16": [PeakDetectionAccuracy(name='acc'), HeatmapPrecision(name='prec')],
+        "p8": [NonAbsolutePeakAccuracy(2, threshold=0.1, name="acc"), HeatmapPrecision(name='prec')],
+        "p16": [NonAbsolutePeakAccuracy(1, threshold=0.1, name="acc"), HeatmapPrecision(name='prec')],
         "p8_off": [OffsetMAE(name='mae'), OffsetAccuracy(threshold=0.3, name='acc')],
         "p16_off": [OffsetMAE(name='mae'), OffsetAccuracy(threshold=0.3, name='acc')]
     }
@@ -132,7 +131,8 @@ early_stop_cb = callbacks.EarlyStopping(
 # Save Best Model
 checkpoint_cb = callbacks.ModelCheckpoint(
     filepath="best_model.keras",
-    monitor="val_loss",
+    monitor="val_p16_off_mae",
+    mode="min",
     save_best_only=True
 )
 

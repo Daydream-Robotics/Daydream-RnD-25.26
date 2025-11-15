@@ -1,5 +1,61 @@
 import tensorflow as tf
 
+class NonAbsolutePeakAccuracy(tf.keras.metrics.Metric):
+    """
+    Measures accuracy allowing spatial tolerance (within N grid cells).
+    """
+    def __init__(self, tolerance=1, threshold=0.1, name='nonabs_peak_acc', **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.tolerance = tolerance  # Grid cells of tolerance
+        self.threshold = threshold
+        self.correct = self.add_weight(name='correct', initializer='zeros')
+        self.total = self.add_weight(name='total', initializer='zeros')
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        # Find ground truth peaks
+        gt_peaks = tf.reduce_max(y_true, axis=-1)  # [B, H, W]
+        peak_mask = tf.cast(gt_peaks > self.threshold, tf.float32)
+        
+        # Get predicted class at each location
+        pred_class = tf.argmax(y_pred, axis=-1)  # [B, H, W]
+        true_class = tf.argmax(y_true, axis=-1)  # [B, H, W]
+        
+        # For each peak, check if ANY nearby prediction matches
+        batch_size = tf.shape(y_true)[0]
+        height = tf.shape(y_true)[1]
+        width = tf.shape(y_true)[2]
+        
+        # This is simplified - for each peak pixel, we check if class matches
+        # within tolerance. For full implementation, you'd need spatial pooling.
+        
+        # Simple version: apply max pooling to dilate the "correct" regions
+        matches = tf.cast(tf.equal(pred_class, true_class), tf.float32)
+        
+        # Dilate matches by tolerance using max pooling
+        if self.tolerance > 0:
+            matches_expanded = tf.expand_dims(matches, -1)  # [B, H, W, 1]
+            kernel_size = 2 * self.tolerance + 1
+            matches_dilated = tf.nn.max_pool2d(
+                matches_expanded,
+                ksize=kernel_size,
+                strides=1,
+                padding='SAME'
+            )
+            matches = tf.squeeze(matches_dilated, -1)
+        
+        # Count matches at peak locations
+        correct = matches * peak_mask
+        
+        self.correct.assign_add(tf.reduce_sum(correct))
+        self.total.assign_add(tf.reduce_sum(peak_mask) + 1e-8)
+
+    def result(self):
+        return self.correct / (self.total + 1e-8)
+
+    def reset_state(self):
+        self.correct.assign(0.0)
+        self.total.assign(0.0)
+
 class PeakDetectionAccuracy(tf.keras.metrics.Metric):
     """
     Measures classification accuracy only at true peak centers.

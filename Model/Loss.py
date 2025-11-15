@@ -31,10 +31,12 @@ def _focal_softmax(logits, y_true, valid_mask, alpha=0.25, gamma=2.0, reduction=
     if len(valid_mask.shape) == 4 and valid_mask.shape[-1] != 1:
         valid_mask = tf.reduce_max(valid_mask, axis=-1)
 
+    # Mask the Numerator
+    loss = loss * valid_mask 
 
     if reduction == "mean":
-        denom = tf.reduce_sum(valid_mask) + 1e-8
-        return tf.reduce_sum(loss) / denom
+        num_positives = tf.reduce_sum(valid_mask) + 1e-8
+        return tf.reduce_sum(loss) / num_positives
     elif reduction == "sum":
         return tf.reduce_sum(loss)
     else:
@@ -55,7 +57,7 @@ def _huber_vector(pred, target, delta):
     return tf.reduce_sum(huber, axis=-1)
 
 
-def _huber(prediction, target, valid_mask, delta=2.0, reduction="mean"):
+def _huber(prediction, target, valid_mask, delta=1.0, reduction="mean"):
     #mask positives
     per_cell = _huber_vector(prediction, target, delta)
     loss = per_cell * valid_mask
@@ -107,18 +109,21 @@ class HeatmapLoss(tf.keras.losses.Loss):
         self.reduction_type = reduction
 
     def call(self, y_true, y_pred):
+        valid_mask = tf.reduce_max(y_true, axis=-1)  # [B, H, W]
+        valid_mask = tf.cast(valid_mask > 0.01, tf.float32)  # Threshold to get object regions
+        
         return total_loss(
             pred_heatmap=y_pred,
             y_heatmap=y_true,
-            pred_offset=tf.zeros_like(y_pred),
-            y_offset=tf.zeros_like(y_pred),
-            valid_mask=tf.ones_like(y_true[..., 0]),  # dummy mask
+            pred_offset=None,
+            y_offset=None,
+            valid_mask=valid_mask,  # Use real mask!
             alpha=self.alpha,
             gamma=self.gamma,
             delta=1.0,
             reduction=self.reduction_type,
             lambda_cls=1.0,
-            lambda_offset=0.0  # disable offset loss
+            lambda_offset=0.0
         )
 
 
