@@ -65,39 +65,41 @@ def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA)
         x_norm = tf.clip_by_value(xs[i], 0.0, 1.0)
         y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
 
-        # Grid indices (use floor for consistency with offset logic)
-        gx = tf.cast(tf.floor(x_norm * tf.cast(W, tf.float32) + 0.5), tf.int32)
-        gy = tf.cast(tf.floor(y_norm * tf.cast(H, tf.float32) + 0.5), tf.int32)
+        # Map normalized coords to grid coordinates
+        # Using round for better edge handling
+        gx = tf.cast(tf.round(x_norm * tf.cast(W, tf.float32)), tf.int32)
+        gy = tf.cast(tf.round(y_norm * tf.cast(H, tf.float32)), tf.int32)
 
-        # Clamp to valid bounds in case x==W or y==H
+        # Clamp to valid bounds
         gx = tf.clip_by_value(gx, 0, W - 1)
         gy = tf.clip_by_value(gy, 0, H - 1)
 
-        # *CHECK FOR BOUNDS ISSUE
-        half = g_size // 2
+        # Convert to padded coordinates
+        gx_pad = gx + pad
+        gy_pad = gy + pad
 
-        # compute patch region in padded coords
+        # Compute patch region in padded coords
         x0 = gx_pad - half
         y0 = gy_pad - half
         x1 = gx_pad + half + 1
         y1 = gy_pad + half + 1
 
-        # crop kernel if it spills out of padded bounds (rare)
+        # Crop kernel if it spills out of padded bounds
         kx0 = tf.maximum(0, -x0)
         ky0 = tf.maximum(0, -y0)
         kx1 = g_size - tf.maximum(0, x1 - (W + 2*pad))
         ky1 = g_size - tf.maximum(0, y1 - (H + 2*pad))
 
-        # clamp image coords
+        # Clamp image coords
         x0 = tf.maximum(0, x0)
         y0 = tf.maximum(0, y0)
         x1 = tf.minimum(W + 2*pad, x1)
         y1 = tf.minimum(H + 2*pad, y1)
 
-        # final patch
+        # Final patch
         patch = kernel[ky0:ky1, kx0:kx1]
 
-        # meshgrid for scatter
+        # Meshgrid for scatter
         ph = tf.shape(patch)[0]
         pw = tf.shape(patch)[1]
 
@@ -116,7 +118,7 @@ def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA)
 
         heatmap = tf.tensor_scatter_nd_max(heatmap, coords, values)
 
-    # crop back to original shape (center region)
+    # Crop back to original shape (center region)
     heatmap = heatmap[pad:pad+H, pad:pad+W, :]
     return heatmap
 
@@ -137,25 +139,20 @@ def _draw_offset_map(xs, ys, out_hw):
         y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
         
         # Convert to grid coordinates (same mapping as heatmap)
-        # For consistency: use floor(x_norm * W) like in heatmap
-        cx = x_norm * tf.cast(W, tf.float32)
-        cy = y_norm * tf.cast(H, tf.float32)
+        gx_float = x_norm * tf.cast(W, tf.float32)
+        gy_float = y_norm * tf.cast(H, tf.float32)
         
-        # Grid indices (same as heatmap)
-        gx = tf.cast(tf.floor(cx), tf.int32)
-        gy = tf.cast(tf.floor(cy), tf.int32)
+        # Grid indices (same as heatmap - use round)
+        gx = tf.cast(tf.round(gx_float), tf.int32)
+        gy = tf.cast(tf.round(gy_float), tf.int32)
         
-        # Clip to valid range (same as heatmap)
+        # Clip to valid range
         gx = tf.clip_by_value(gx, 0, W - 1)
         gy = tf.clip_by_value(gy, 0, H - 1)
         
-        # Calculate offset from cell CENTER (not corner)
-        # Cell center is at (gx + 0.5, gy + 0.5) in grid coordinates
-        cell_center_x = tf.cast(gx, tf.float32) + 0.5
-        cell_center_y = tf.cast(gy, tf.float32) + 0.5
-        
-        dx = cx - cell_center_x
-        dy = cy - cell_center_y
+        # Calculate offset from the rounded grid position
+        dx = gx_float - tf.cast(gx, tf.float32)
+        dy = gy_float - tf.cast(gy, tf.float32)
 
         offsets = tf.tensor_scatter_nd_update(
             offsets, [[gy, gx, 0]], [dx]
@@ -220,6 +217,3 @@ def get_dataset(tfrecord_paths, batch_size, shuffle_buffer=256, training=True):
     ds = ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
     ds=ds.repeat()
     return ds
-
-
-    
