@@ -1,5 +1,4 @@
 #include "main.h"
-#include <cstdio>//standard C i/o functions AUTO
 #include <cstdlib>//dynamic memory allocation
 #include <cstring>//string manipulation AUTO
 
@@ -27,7 +26,7 @@ void on_center_button() {
  */
 void initialize() {
 	pros::lcd::initialize();
-	pros::lcd::set_text(1, "COMP_COMM_TEST_1");
+	pros::lcd::set_text(1, "struct_overwrite_TEST_3");
 
 	pros::lcd::register_btn1_cb(on_center_button);
 }
@@ -62,120 +61,127 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-int OBJECT_COUNT=0;
-#define OBJECT_DATA_FIELDS_COUNT 4
+//global struct array that will be used to store ObjectData structs
+//this represents all detected objects in a single frame
+//this array of structs will be overwritten each time a new frame of dected objects is sent
 
-//struct to be initialized by pi output
-typedef struct{
-	float confidence_value;
-	float x_center;
-	float y_center;
-	int class_id;
+
+
+typedef struct ObjectData{
+	float confidencevalue;
+	int xcenter;
+	int ycenter;
+	int classid;
+	struct ObjectData* next;
 }ObjectData;
 
-ObjectData* initialize_objectdata(){
-	//char array buffer to temporarly store pi output until '\n'
-	//buffer array size may be tuned for efficiency
-	char input_stream_buffer[128];
+ObjectData* insert_node(ObjectData* root,ObjectData* node){
+	if(root != NULL)
+		root->next = node;
+	return node;
+}//end of insert_node() function
 
-	//recieved in the pi input stream, used to request detected object data
-	printf("REQUEST_OBJECT_DATA\n");
-	//immediately output
-	fflush(stdout);
+ObjectData* objects_in_frame(){
+	//input buffer read to from stdin
+	char inputbuffer[1200];
+	ObjectData* head = NULL;
 
-	//enter only if fgets succeeds in reading input from the pi and storing it into the input_stream_buffer
-	if(fgets(input_stream_buffer,sizeof(input_stream_buffer),stdin) != NULL){
-		//read and store obj_count
-		int obj_count_parse = sscanf(input_stream_buffer,"%d",&OBJECT_COUNT);
-		if(obj_count_parse == 1){
-			if (OBJECT_COUNT <= 0) {
-            	printf("OBJECT_COUNT_IS_0\n");
-            	fflush(stdout);
-				//if no objects were detected a 0 count was sent by pi
-            	return NULL;
-        	}
-			printf("OBJECT_COUNT_PARSE_SUCCESS\n");
-			fflush(stdout);
-		}else{
-			printf("OBJECT_COUNT_PARSE_FAILED\n");
-			fflush(stdout);
-		}
-
-		
-		
-		//dynamic memory allocation for ObjectData array
-		ObjectData* detected_objects=(ObjectData*)calloc(OBJECT_COUNT,sizeof(ObjectData));//NOT FREE
-		
-		//if dma was successful
-		if(detected_objects != NULL){
-			//read and store a single detected object confidence_value,x,y,class_id
-			for(int i=0;i<OBJECT_COUNT;i++){
-				if(fgets(input_stream_buffer,sizeof(input_stream_buffer),stdin) != NULL){
-					int csv_data_in = sscanf(input_stream_buffer, "%f,%f,%f,%d",
-										&detected_objects[i].confidence_value,
-										&detected_objects[i].x_center,
-										&detected_objects[i].y_center,
-										&detected_objects[i].class_id);
-					//success or fail parse acknowledge signal to pi
-					if(csv_data_in == 4){
-						printf("OBJECT_DATA_PARSE_SUCCESS\n");
-						fflush(stdout);
-					}else{
-						printf("OBJECT_DATA_PARSE_FAILED\n");
-						fflush(stdout);
-						//unreliable information stored
-						free(detected_objects);
-						return NULL;
-					}
-				}else{
-					printf("NP_ARRAY_ELEMENT_CSV_FAILED_INPUTSTREAM");
-					fflush(stdout);
-				}
-			}
-		}else{
-			printf("DMA_FAILED\n");
-			fflush(stdout);
+	if(fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
+		//initialize root
+		ObjectData* root = NULL;
+		//initalize node
+		ObjectData* node = (ObjectData*)malloc(sizeof(ObjectData));
+		if(node != NULL)
+			node->next = NULL;
+		else
 			return NULL;
+		//initialize first node mandatory for strtok()
+
+		//tokenize inputbuffer
+		char* token = strtok(inputbuffer,",|\n");
+		//initialize class_id field
+		sscanf(token,("%d"),&node->classid);
+
+		token = strtok(NULL,",|\n");
+		//initialize xcenter field
+		sscanf(token,("%d"),&node->xcenter);
+
+		token = strtok(NULL,",|\n");
+		//initialize ycenter field
+		sscanf(token,("%d"),&node->ycenter);
+
+		token = strtok(NULL,",|\n");
+		//initialize confidencevalue field
+		sscanf(token,("%f"),&node->confidencevalue);
+
+		//insert node to linkedlist
+		root = insert_node(root,node);
+
+		//store linkedlist head
+		head = root;
+
+		while(token != NULL){
+		    //next node
+			token = strtok(NULL,",|\n");
+
+			if(token == NULL)
+                break;
+
+			//initalize node
+            ObjectData* node = (ObjectData*)malloc(sizeof(ObjectData));
+            if(node != NULL)
+                node->next = NULL;
+            else
+                return NULL;
+
+            //initialize class_id field
+			sscanf(token,("%d"),&node->classid);
+
+			token = strtok(NULL,",|\n");
+			//initialize xcenter field
+			sscanf(token,("%d"),&node->xcenter);
+
+			token = strtok(NULL,",|\n");
+			//initialize ycenter field
+			sscanf(token,("%d"),&node->ycenter);
+
+			token = strtok(NULL,",|\n");
+			//initialize confidencevalue field
+			sscanf(token,("%f"),&node->confidencevalue);
+
+			//insert node to linkedlist
+			root = insert_node(root,node);
 		}
-		return detected_objects;
 	}else{
-		printf("FAILED_INPUTSTREAM_READ\n");
-		fflush(stdout);
+		//no detected objects due to failed fgets()
+		printf("No Objects Detected");
 		return NULL;
 	}
-}
+
+	return head;
+} //end of objects_in_frame() function
 
 void autonomous() {
-	ObjectData* detected_obj_arr = initialize_objectdata();
-	// Continuous loop to poll the vision system until the robot is disabled or communication fails
-    while (true) {
-        ObjectData* detected_obj_arr = initialize_objectdata();
-        
-        // Output results to the VEX terminal (optional, but useful for VEX side debugging)
-        if (detected_obj_arr != NULL) {
-            printf("\n--- VEX CYCLE START: Found %d Objects ---\n", OBJECT_COUNT);
-            for (int i = 0; i < OBJECT_COUNT; i++) {
-                printf("Obj %d: ID=%d, Conf=%.2f, X=%.0f, Y=%.0f\n", 
-                       i, 
-                       detected_obj_arr[i].class_id, 
-                       detected_obj_arr[i].confidence_value, 
-                       detected_obj_arr[i].x_center, 
-                       detected_obj_arr[i].y_center);
-            }
+	while(1){
+		ObjectData* root = objects_in_frame();
+		ObjectData* temproot = root;
+        int objcount=1;
+		//constantly output overwritten linkedlist to pi terminal
+		while(root != NULL){
+			printf("\n___%d___\n\nClass_id:\t%d\nX Center:\t%d\nY Center:\t%d\nConfidence:\t%0.2f\n"
+            ,objcount,root->classid,root->xcenter,root->ycenter,root->confidencevalue);
+            objcount++;
+			root = root->next;
+		}
 
-            // CRITICAL STEP: FREE MEMORY AFTER USE
-            free(detected_obj_arr);
-            printf("--- VEX CYCLE END: Memory Freed ---\n");
-        } else {
-            // Log when a cycle yields no data or an error occurred
-            printf("--- VEX CYCLE END: No Data or Communication Error ---\n");
-        }
-
-        // Delay to prevent CPU hogging and control the polling rate (e.g., 5 times per second)
-        pros::delay(200); // Wait 200 milliseconds (5 Hz polling rate)
-    }
+		//free linked list
+		while (temproot != NULL){
+			ObjectData* freeroot = temproot;
+			temproot = temproot->next;
+			free(freeroot);
+		}
+	}
 }
-
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -189,9 +195,6 @@ void autonomous() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
-
-
-
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
 	pros::MotorGroup left_mg({1, -2, 3});    // Creates a motor group with forwards ports 1 & 3 and reversed port 2
