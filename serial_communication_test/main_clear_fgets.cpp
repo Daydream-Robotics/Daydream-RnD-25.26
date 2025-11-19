@@ -83,8 +83,8 @@ ObjectData* insert_node(ObjectData* root,ObjectData* node){
 
 ObjectData* objects_in_frame(){
 	//input buffer read to from stdin
-	int size = 1200;
-	char inputbuffer[size];
+	// int size = 1200;
+	// char inputbuffer[size];
 	ObjectData* head = NULL;
 
 	// char* latestFrame;
@@ -98,16 +98,35 @@ ObjectData* objects_in_frame(){
 	// 	pros::delay(10)
 	// }
 
-	std::stringstream buffer;
-	buffer << std::cin.rdbuf();
+	static constexpr size_t BUFFER_SIZE = 4096;
+    std::array<char, BUFFER_SIZE> buffer;
+    
+    size_t bytes_read = fread(buffer.data(), 1, buffer.size() - 1, stdin);
 	pros::lcd::print(5, "String recieved");
+    
+	// Check for string data
+    if (bytes_read == 0) {
+        return NULL;
+    }
+    
+    buffer[bytes_read] = '\0';
+    std::string data(buffer.data(), bytes_read);
 
-	std::string frame;
-	std::string lastFrame;
-	
-	while(std::getline(buffer, frame)){
-		lastFrame = frame;
+	// Find last complete line
+    size_t last_nl = data.find_last_of('\n');
+    if (last_nl == std::string::npos) {
+        return NULL;
+    }
+
+	size_t prev_nl = data.find_last_of('\n', last_nl - 1);
+    
+	std::string lastFrameStr;
+    if (prev_nl == std::string::npos) {
+        lastFrameStr = data.substr(0, last_nl);
+    }else{
+		data.substr(prev_nl + 1, last_nl - prev_nl - 1);
 	}
+    
 
 	pros::lcd::print(1, "frame captured");
 
