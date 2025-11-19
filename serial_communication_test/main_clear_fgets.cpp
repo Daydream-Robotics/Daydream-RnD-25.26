@@ -87,18 +87,29 @@ ObjectData* objects_in_frame(){
 	char inputbuffer[size];
 	ObjectData* head = NULL;
 
-	char* latestFrame;
+	// char* latestFrame;
 
 	pros::lcd::print(3, "frame captured");
 	int counter = 0;
-	while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
-		// std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
-		latestFrame = inputbuffer;
-		pros::lcd::print(4, std::to_string(counter++).c_str());
-		pros::delay(10)
-	}
-	pros::lcd::print(1, "frame captured");
+	// while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
+	// 	// std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
+	// 	latestFrame = inputbuffer;
+	// 	pros::lcd::print(4, std::to_string(counter++).c_str());
+	// 	pros::delay(10)
+	// }
+
+	std::stringstream buffer;
+	buffer << std::cin.rdbuf();
+
+	std::string frame;
+	std::string lastFrame;
 	
+	while(std::getline(buffer, frame)){
+		lastFrame = frame;
+	}
+
+	pros::lcd::print(1, "frame captured");
+
 	//initialize root
 	ObjectData* root = NULL;
 	//initalize node
@@ -110,7 +121,7 @@ ObjectData* objects_in_frame(){
 	//initialize first node mandatory for strtok()
 
 	//tokenize inputbuffer
-	char* token = strtok(latestFrame,",|\n");
+	char* token = strtok(lastFrame.c_str(),",|\n");
 	//initialize class_id field
 	sscanf(token,("%d"),&node->classid);
 
