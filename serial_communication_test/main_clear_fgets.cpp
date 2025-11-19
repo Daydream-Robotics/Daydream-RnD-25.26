@@ -83,15 +83,16 @@ ObjectData* insert_node(ObjectData* root,ObjectData* node){
 
 ObjectData* objects_in_frame(){
 	//input buffer read to from stdin
-	int size = 1200
+	int size = 1200;
 	char inputbuffer[size];
 	ObjectData* head = NULL;
 
 	char latestFrame[size];
 
-	while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL;){
+	while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
 		std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
 	}
+	pros::lcd::print(1, "frame captured");
 	
 	//initialize root
 	ObjectData* root = NULL;
@@ -167,6 +168,7 @@ void autonomous() {
 		ObjectData* root = objects_in_frame();
 		ObjectData* temproot = root;
         int objcount=1;
+		pros::lcd::print(2, "Obects Returned");
 		//constantly output overwritten linkedlist to pi terminal
 		while(root != NULL){
 			printf("\n___%d___\n\nClass_id:\t%d\nX Center:\t%d\nY Center:\t%d\nConfidence:\t%0.2f\n"
