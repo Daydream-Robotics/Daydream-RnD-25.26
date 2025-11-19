@@ -87,10 +87,12 @@ ObjectData* objects_in_frame(){
 	char inputbuffer[size];
 	ObjectData* head = NULL;
 
-	char latestFrame[size];
+	char* latestFrame;
 
 	while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
-		std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
+		// std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
+		latestFrame = inputbuffer;
+		pros::delay(10)
 	}
 	pros::lcd::print(1, "frame captured");
 	
