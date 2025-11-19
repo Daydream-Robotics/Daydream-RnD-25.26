@@ -89,8 +89,8 @@ ObjectData* objects_in_frame(){
 
 	// char* latestFrame;
 
-	pros::lcd::print(3, "frame captured");
-	int counter = 0;
+	pros::lcd::print(3, "pre capture");
+	// int counter = 0;
 	// while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
 	// 	// std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
 	// 	latestFrame = inputbuffer;
@@ -100,6 +100,7 @@ ObjectData* objects_in_frame(){
 
 	std::stringstream buffer;
 	buffer << std::cin.rdbuf();
+	pros::lcd::print(5, "String recieved");
 
 	std::string frame;
 	std::string lastFrame;
@@ -119,9 +120,11 @@ ObjectData* objects_in_frame(){
 	else
 		return NULL;
 	//initialize first node mandatory for strtok()
-
+	// char* last
+	char* lastFrameC;
+	std::strcpy(lastFrameC, lastFrame.c_str());
 	//tokenize inputbuffer
-	char* token = strtok(lastFrame.c_str(),",|\n");
+	char* token = strtok(lastFrameC,",|\n");
 	//initialize class_id field
 	sscanf(token,("%d"),&node->classid);
 
