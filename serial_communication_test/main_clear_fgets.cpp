@@ -89,9 +89,12 @@ ObjectData* objects_in_frame(){
 
 	char* latestFrame;
 
+	pros::lcd::print(3, "frame captured");
+	int counter = 0;
 	while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
 		// std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
 		latestFrame = inputbuffer;
+		pros::lcd::print(4, std::to_string(counter++).c_str());
 		pros::delay(10)
 	}
 	pros::lcd::print(1, "frame captured");
