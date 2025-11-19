@@ -83,13 +83,14 @@ ObjectData* insert_node(ObjectData* root,ObjectData* node){
 
 ObjectData* objects_in_frame(){
 	//input buffer read to from stdin
-	char inputbuffer[1200];
+	int size = 1200
+	char inputbuffer[size];
 	ObjectData* head = NULL;
 
-	char latestFrame[1200];
+	char latestFrame[size];
 
 	while (fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL;){
-		std::memcpy(latestFrame, inputbuffer, size * sizeof(int));
+		std::memcpy(latestFrame, inputbuffer, size * sizeof(char));
 	}
 	
 	//initialize root
