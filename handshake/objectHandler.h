@@ -14,6 +14,6 @@ typedef struct GamePieceData{
 	int conf;
 }GamePieceData;
 
-GamePieceData getObject(GamePiece gamePiece);
+GamePieceData getClosestObject(GamePiece gamePiece);
 
 #endif
