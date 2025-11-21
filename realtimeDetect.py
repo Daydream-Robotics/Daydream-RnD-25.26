@@ -257,6 +257,9 @@ def step(conf_threshold=0.25):
         conf_threshold=conf_threshold
     )
 
+    # sort detections by y
+    detections = detections[detections[:, 3].argsort()]
+
     objects = []
     if detections is not None:
         for detection in detections:
