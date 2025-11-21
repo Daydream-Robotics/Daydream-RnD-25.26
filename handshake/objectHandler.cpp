@@ -1,6 +1,7 @@
 #include <cstdlib>//dynamic memory allocation
 #include <cstring>//string manipulation AUTO
 #include <objectHandler.h>
+#include <iostream>
 
 GamePieceData* objects_in_frame(){
 	//input buffer read to from stdin
