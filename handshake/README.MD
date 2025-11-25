@@ -1,6 +1,6 @@
 # `init_map()` dependencies
 Use of std::optional requires at least c++17.\
-If this is not possible on pros use of an is_valid flag inside each\
+If this is not possible on pros use of an `is_valid` flag inside each\
 struct must be used to check if the object was detected in a frame.\
 <br>
 >[!WARNING]
