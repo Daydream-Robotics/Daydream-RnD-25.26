@@ -31,6 +31,4 @@ constexpr size_t MID_GOAL_1_INDEX = static_cast<size_t>(GamePiece::MID_GOAL_1);
 constexpr size_t MID_GOAL_2_INDEX = static_cast<size_t>(GamePiece::MID_GOAL_2);
 constexpr size_t MID_GOAL_3_INDEX = static_cast<size_t>(GamePiece::MID_GOAL_3);
 constexpr size_t MID_GOAL_4_INDEX = static_cast<size_t>(GamePiece::MID_GOAL_4);
-
-
 #endif
