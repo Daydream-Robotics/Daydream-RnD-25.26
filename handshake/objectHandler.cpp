@@ -2,6 +2,8 @@
 #include "objectHandler.h"
 #include <iostream>
 
+char firstchar = '0';
+
 GamePieceArray init_array(){
     //return if any statement fails
     GamePieceArray failedinitarray;
@@ -13,6 +15,7 @@ GamePieceArray init_array(){
     fflush(stdout);
 
     if(fgets(inputbuffer,sizeof(inputbuffer),stdin) != NULL){
+        firstchar = inputbuffer[0];
         GamePieceArray framearray;
         //temporarily store GamePieceData
         int classidparse;
@@ -134,58 +137,64 @@ GamePieceArray get_obj(){
 }
 
 int main(void){
-    GamePieceArray giveframearray = get_obj();
+    while(firstchar != '1'){
 
-    if(giveframearray[RED_BALL_INDEX].has_value()){
-        printf("\ndetected red ball\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[RED_BALL_INDEX].value()).x,
-           (giveframearray[RED_BALL_INDEX].value()).y,
-           (giveframearray[RED_BALL_INDEX].value()).conf);
-    }else
-        printf("\nno red ball found\n");
-    if(giveframearray[BLUE_BALL_INDEX].has_value()){
-        printf("\ndetected blue ball\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[BLUE_BALL_INDEX].value()).x,
-           (giveframearray[BLUE_BALL_INDEX].value()).y,
-           (giveframearray[BLUE_BALL_INDEX].value()).conf);
-    }else
-        printf("\nno blue ball found\n");
-    if(giveframearray[LONG_GOAL_INDEX].has_value()){
-        printf("\ndetected long goal\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[LONG_GOAL_INDEX].value()).x,
-           (giveframearray[LONG_GOAL_INDEX].value()).y,
-           (giveframearray[LONG_GOAL_INDEX].value()).conf);
-    }else
-        printf("\nno long goal found\n");
-    if(giveframearray[MID_GOAL_1_INDEX].has_value()){
-        printf("\ndetected mid goal 1\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[MID_GOAL_1_INDEX].value()).x,
-           (giveframearray[MID_GOAL_1_INDEX].value()).y,
-           (giveframearray[MID_GOAL_1_INDEX].value()).conf);
-    }else
-        printf("\nno mid goal 1 found\n");
-    if(giveframearray[MID_GOAL_2_INDEX].has_value()){
-        printf("\ndetected mid goal 2\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[MID_GOAL_2_INDEX].value()).x,
-           (giveframearray[MID_GOAL_2_INDEX].value()).y,
-           (giveframearray[MID_GOAL_2_INDEX].value()).conf);
-    }else
-        printf("\nno mid goal 2 found\n");
-    if(giveframearray[MID_GOAL_3_INDEX].has_value()){
-        printf("\ndetected mid goal 3\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[MID_GOAL_3_INDEX].value()).x,
-           (giveframearray[MID_GOAL_3_INDEX].value()).y,
-           (giveframearray[MID_GOAL_3_INDEX].value()).conf);
-    }else
-        printf("\nno mid goal 3 found\n");
-    if(giveframearray[MID_GOAL_4_INDEX].has_value()){
-        printf("\ndetected mid goal 4\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
-           (giveframearray[MID_GOAL_4_INDEX].value()).x,
-           (giveframearray[MID_GOAL_4_INDEX].value()).y,
-           (giveframearray[MID_GOAL_4_INDEX].value()).conf);
-    }else
-        printf("\nno mid goal 4 found\n");
+        GamePieceArray giveframearray = get_obj();
+
+        if(giveframearray[RED_BALL_INDEX].has_value()){
+            printf("\ndetected red ball\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[RED_BALL_INDEX].value()).x,
+               (giveframearray[RED_BALL_INDEX].value()).y,
+               (giveframearray[RED_BALL_INDEX].value()).conf);
+        }else
+            printf("\nno red ball found\n");
+        if(giveframearray[BLUE_BALL_INDEX].has_value()){
+            printf("\ndetected blue ball\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[BLUE_BALL_INDEX].value()).x,
+               (giveframearray[BLUE_BALL_INDEX].value()).y,
+               (giveframearray[BLUE_BALL_INDEX].value()).conf);
+        }else
+            printf("\nno blue ball found\n");
+        if(giveframearray[LONG_GOAL_INDEX].has_value()){
+            printf("\ndetected long goal\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[LONG_GOAL_INDEX].value()).x,
+               (giveframearray[LONG_GOAL_INDEX].value()).y,
+               (giveframearray[LONG_GOAL_INDEX].value()).conf);
+        }else
+            printf("\nno long goal found\n");
+        if(giveframearray[MID_GOAL_1_INDEX].has_value()){
+            printf("\ndetected mid goal 1\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[MID_GOAL_1_INDEX].value()).x,
+               (giveframearray[MID_GOAL_1_INDEX].value()).y,
+               (giveframearray[MID_GOAL_1_INDEX].value()).conf);
+        }else
+            printf("\nno mid goal 1 found\n");
+        if(giveframearray[MID_GOAL_2_INDEX].has_value()){
+            printf("\ndetected mid goal 2\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[MID_GOAL_2_INDEX].value()).x,
+               (giveframearray[MID_GOAL_2_INDEX].value()).y,
+               (giveframearray[MID_GOAL_2_INDEX].value()).conf);
+        }else
+            printf("\nno mid goal 2 found\n");
+        if(giveframearray[MID_GOAL_3_INDEX].has_value()){
+            printf("\ndetected mid goal 3\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[MID_GOAL_3_INDEX].value()).x,
+               (giveframearray[MID_GOAL_3_INDEX].value()).y,
+               (giveframearray[MID_GOAL_3_INDEX].value()).conf);
+        }else
+            printf("\nno mid goal 3 found\n");
+        if(giveframearray[MID_GOAL_4_INDEX].has_value()){
+            printf("\ndetected mid goal 4\nx:\t%d\ny:\t%d\nconfidence value:\t%f\n",
+               (giveframearray[MID_GOAL_4_INDEX].value()).x,
+               (giveframearray[MID_GOAL_4_INDEX].value()).y,
+               (giveframearray[MID_GOAL_4_INDEX].value()).conf);
+        }else
+            printf("\nno mid goal 4 found\n");
+    }
+
     return 0;
 }//end of main() function
 
 //0,150,200,0.95|1,320,100,0.88|2,480,350,0.79|3,50,450,0.92|4,600,50,0.85|5,400,250,0.72|6,250,50,0.98\n
+//3,98,412,0.81|2,550,15,0.73|1,121,580,0.99|0,390,260,0.65|4,50,50,0.91|5,233,300,0.84|6,610,5,0.76\n
+//3,500,105,0.77|6,145,390,0.82|1,288,250,0.91|0,55,15,0.96|5,405,450,0.68|2,200,88,0.73|4,330,330,0.89\n
