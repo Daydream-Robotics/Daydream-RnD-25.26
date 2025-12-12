@@ -43,7 +43,7 @@ def run_cnn_and_get_output():
 
     return objects
 
-def main_loop():
+def main():
     REQ_CHECK_TIME = 0.5
 
     while True:
@@ -74,7 +74,7 @@ def main_loop():
 
 if __name__ == "__main__":
     try:
-        main_loop()
+        main()
     except KeyboardInterrupt:
         print("\nExiting program.")
         ser.close()
