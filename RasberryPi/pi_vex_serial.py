@@ -49,28 +49,24 @@ def main():
     while True:
         data_string = run_cnn_and_get_output()        
 
-        has_req = False
         pre_req_time = time.time()
-        # check for serial messages until a request or REQ_CHEC_TIME has passed
-        while not (time.time() - pre_req_time > REQ_CHECK_TIME or has_req):
+        # check for serial messages until REQ_CHEC_TIME has passed
+        while not (time.time() - pre_req_time > REQ_CHECK_TIME):
             if ser.in_waiting > 0:
                 #read and store '\n' terminated line from input stream
                 input_string = ser.readline().decode('utf-8').strip()
 
                 # checks for request character
                 if input_string == 'A':
-                    has_req = True
+                    # send data to VEX brain if a request was recieved
+                    try:
+                        payload = (data_string + '\n').encode('utf-8')
+                        ser.write(payload)
+                    except serial.SerialTimeoutException as e:
+                        print(f"Error writing to serial port: {e}")
+                    # break from loop
+                    break
         
-        # send data to VEX brain if a request was recieved
-        if has_req:
-            try:
-                payload = (data_string + '\n').encode('utf-8')
-                ser.write(payload)
-                print(f"Sent: {data_string}")
-            except serial.SerialTimeoutException as e:
-                print(f"Error writing to serial port: {e}")
-
-
 if __name__ == "__main__":
     try:
         main()
