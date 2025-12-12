@@ -7,8 +7,6 @@ import numpy as np
 SERIAL_PORT = '/dev/ttyACM1'
 BAUD_RATE = 115200
 
-DEBUG = True
-
 try:
     ser = serial.Serial(
         port=SERIAL_PORT,
