@@ -14,6 +14,9 @@ def _focal_softmax(logits, y_true, valid_mask, alpha=0.25, gamma=2.0, reduction=
 
     # Normalize y_true (in case it's not perfectly normalized)
     y_true = tf.clip_by_value(y_true, 0.0, 1.0)
+    den = tf.reduce_sum(y_true, axis=-1, keepdims=True) + 1e-8
+    y_true = y_true / den
+
     probs = tf.nn.softmax(logits, axis=-1)
 
     # Compute standard CE per-pixel

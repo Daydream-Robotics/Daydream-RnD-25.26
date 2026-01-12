@@ -8,7 +8,7 @@ NUM_CLASSES = 4
 P8_HW = (64,64) # Height, Width p8
 P16_HW = (32,32) # Height, Width, p16
 SIGMA = 1.5 # Gaussian Radius
-LOG_PATH = "/home/agn/ProgramSpace/TensorFlow/Daydream-RnD-25.26/debug_stamps.txt"
+LOG_PATH = "/home/agnco/TensorFlow/Daydream-RnD-25.26/debug_stamps.txt"
 
 
 # --------------------------------

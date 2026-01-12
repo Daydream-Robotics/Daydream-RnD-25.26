@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 
-def visualize_allclass_heatmaps(img, p8_map, p16_map, save_path="/home/agn/ProgramSpace/TensorFlow/Daydream-RnD-25.26/debug_allclass_grid.png"):
+def visualize_allclass_heatmaps(img, p8_map, p16_map, save_path="/home/agnco/TensorFlow/Daydream-RnD-25.26/debug_allclass_grid.png"):
     """
     Visualizes all-class P8 and P16 heatmaps overlaid on the original image,
     with gridlines for both scales.
@@ -66,7 +66,7 @@ def visualize_allclass_heatmaps(img, p8_map, p16_map, save_path="/home/agn/Progr
     plt.close()
 
 
-def visualize_batch_heatmaps(dataset, num_samples=500, output_dir="/home/agn/ProgramSpace/TensorFlow/Daydream-RnD-25.26/visualizations"):
+def visualize_batch_heatmaps(dataset, num_samples=500, output_dir="/home/agnco/TensorFlow/Daydream-RnD-25.26/visualizations"):
     """
     Processes multiple samples from a dataset and saves visualizations to a folder.
 
@@ -115,7 +115,7 @@ def visualize_batch_heatmaps(dataset, num_samples=500, output_dir="/home/agn/Pro
     print(f"\n✅ Processed all available samples: {sample_count} visualizations generated.")
 
 
-def visualize_single_batch(imgs, labels, output_dir="/home/agn/ProgramSpace/TensorFlow/Daydream-RnD-25.26/visualizations"):
+def visualize_single_batch(imgs, labels, output_dir="/home/agnco/TensorFlow/Daydream-RnD-25.26/visualizations"):
     """
     Convenience function to visualize all images in a single batch.
 

@@ -7,6 +7,7 @@ from metrics import NonAbsolutePeakAccuracy, PeakDetectionAccuracy, HeatmapPreci
 from visualizer import visualize_batch_heatmaps, visualize_single_batch
 import matplotlib.pyplot as plt
 from dataloader import get_dataset, NUM_CLASSES
+from pathlib import Path
 
 
 
@@ -15,13 +16,14 @@ from dataloader import get_dataset, NUM_CLASSES
 # --------------------------------
 
 # Train parameters
-BATCH_SIZE = 16
-EPOCHS = 50
-TRAIN_PATH = ["/media/agn/BAC8-CC11/Daydream/train.tfrecord"]
-VAL_PATH = ["/media/agn/BAC8-CC11/Daydream/val.tfrecord"]
+BATCH_SIZE = 6
+EPOCHS = 100
+ROOT = Path(__file__).resolve().parents[1]
+TRAIN_PATH = ["/workspace/TensorFlow/Files/Daydream/train.tfrecord"]
+VAL_PATH = ["/workspace/TensorFlow/Files/Daydream/val.tfrecord"]
 INPUT_SHAPE = (512,512,3)
-STEPS_PER_EPOCH = 600
-VAL_STEPS_PER_EPOCH = 150
+STEPS_PER_EPOCH = 800
+VAL_STEPS_PER_EPOCH = 200
 
 # Loss parameters
 ALPHA = 0.25
@@ -29,7 +31,7 @@ GAMMA = 2.0
 DELTA = 1.0
 REDUCTION = "mean" # "mean", "sum", or "none"
 LAMBDA_CLS = 2.0
-LAMBDA_OFFSET = 0.6
+LAMBDA_OFFSET = 0.8
 
 
 # --------------------------------
@@ -39,11 +41,11 @@ LAMBDA_OFFSET = 0.6
 train_ds = get_dataset(TRAIN_PATH, BATCH_SIZE, shuffle_buffer=256, training=True)
 val_ds = get_dataset(VAL_PATH, BATCH_SIZE, shuffle_buffer=256, training=False)
 
-visualize_batch_heatmaps(
-    train_ds,
-    num_samples=100,
-    output_dir="/home/agn/ProgramSpace/TensorFlow/Daydream-RnD-25.26/Model/Visualized"
-)
+# visualize_batch_heatmaps(
+#     train_ds,
+#     num_samples=100,
+#     output_dir="/home/agnco/TensorFlow/Daydream-RnD-25.26/Model/Visualized"
+# )
 
 # --------------------------------
 # Model Backbone & Setup
@@ -58,7 +60,7 @@ p8, p16 = backbone_model.output
 # Define how to make output heads
 def make_head(x, num_classes, name):
     x = layers.Conv2D(64, 3, padding="same", activation="relu", name=f"{name}_conv1")(x)
-    x = tf.keras.layers.Conv2D(num_classes, 1, padding="same", activation=None, name=name)(x)
+    x = layers.Conv2D(num_classes, 1, padding="same", activation=None, name=name)(x)
     return x
 
 # Generate Heatmap Heads
@@ -93,7 +95,7 @@ for name, output in model.output.items():
 # --------------------------------
 
 model.compile(
-    optimizer=optimizers.Adam(learning_rate=3e-5, clipvalue=1.0),
+    optimizer=optimizers.Adam(learning_rate=6e-5, clipvalue=1.0), # og 3e-5
     loss={
         "p8": HeatmapLoss(),
         "p16": HeatmapLoss(),
@@ -161,5 +163,6 @@ model.fit(
     epochs=EPOCHS,
     steps_per_epoch=STEPS_PER_EPOCH,
     validation_steps=VAL_STEPS_PER_EPOCH,
-    callbacks=[early_stop_cb, reduce_lr_cb, checkpoint_cb, tensorboard_cb]
+    callbacks=[early_stop_cb, reduce_lr_cb, checkpoint_cb, tensorboard_cb],
+    verbose=2
 )
