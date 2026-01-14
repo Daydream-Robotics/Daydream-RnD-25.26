@@ -32,12 +32,16 @@ arr = arr.astype(np.float32)[None, ...]
 # -------------------------
 # INFER
 # -------------------------
+for _ in range(10):
+    preds = model(arr, training=False)
+    _ = tf.reduce_sum(preds["p8"]).numpy()
+
 tf.profiler.experimental.start(logdir)
 
-preds = model.predict(arr)
+preds = model(arr, training=False)
 
-p8     = preds["p8"][0]      # (64,64,4) logits
-p8_off = preds["p8_off"][0]  # (64,64,2)
+p8     = preds["p8"][0]
+p8_off = preds["p8_off"][0]
 p16 = preds["p16"][0]
 p16_off = preds["p16_off"][0]
 
