@@ -3,11 +3,12 @@ from keras import models
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+import time
 
 # -------------------------
 # CONFIG
 # -------------------------
-MODEL_PATH = "/workspace/TensorFlow/Daydream-RnD-25.26/best_model.keras"
+MODEL_PATH = "/workspace/TensorFlow/Daydream-RnD-25.26/WORKING_MODEL_1.keras"
 IMG_PATH = "/workspace/TensorFlow/Files/Daydream/Photos/Field/000002.png"
 CLASS_TARGET = 0      # RedBall
 CONF_THRESH = 0.9    # *** REAL CONF THRESH ***
@@ -17,6 +18,7 @@ P16_STRIDE = 16
 # -------------------------
 # LOAD MODEL
 # -------------------------
+logdir = "logs/profile"
 model = models.load_model(MODEL_PATH, compile=False)
 
 # -------------------------
@@ -30,12 +32,16 @@ arr = arr.astype(np.float32)[None, ...]
 # -------------------------
 # INFER
 # -------------------------
+tf.profiler.experimental.start(logdir)
+
 preds = model.predict(arr)
 
 p8     = preds["p8"][0]      # (64,64,4) logits
 p8_off = preds["p8_off"][0]  # (64,64,2)
 p16 = preds["p16"][0]
 p16_off = preds["p16_off"][0]
+
+tf.profiler.experimental.stop()
 
 
 # Convert logits -> probs (consistent with your training loss using softmax)
