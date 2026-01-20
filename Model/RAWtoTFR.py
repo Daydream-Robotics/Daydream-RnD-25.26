@@ -5,19 +5,17 @@ from pathlib import Path
 # ----------------------------------------
 # CONFIG
 # ----------------------------------------
-DATA_DIR = Path("/media/agn/BAC8-CC11/Daydream/Photos/FieldTest")
+DATA_DIR = Path("/home/agnco/Files/NDDS/redblue")
 
-OUT_TRAIN = "/media/agn/BAC8-CC11/Daydream/trainTest.tfrecord"
-OUT_VAL   = "/media/agn/BAC8-CC11/Daydream/valTest.tfrecord"
+OUT_TRAIN = "/home/agnco/Files/NDDS/TFrecords/trainREDBLUE.tfrecord"
+OUT_VAL   = "/home/agnco/Files/NDDS/TFrecords/valTestREDBLUE.tfrecord"
 
 SPLIT_RATIO = 0.8
 
-# 4 Classes → must match model order
+# 2 Classes â†’ must match model order
 CLASSES = {
     "RedBall": 0,
     "BlueBall": 1,
-    "LowLeg": 2,
-    "HighLeg": 3,
 }
 
 # ----------------------------------------
@@ -36,14 +34,14 @@ def make_example(stem: str):
     json_path = DATA_DIR / f"{stem}.json"
 
     if not img_path.exists() or not json_path.exists():
-        print(f"⚠ Skipping {stem} (missing image or JSON)")
+        print(f"âš  Skipping {stem} (missing image or JSON)")
         return None
 
     try:
         img_bytes = img_path.read_bytes()
         data = json.loads(json_path.read_text())
     except Exception as e:
-        print(f"❌ Failed reading {stem}: {e}")
+        print(f"âŒ Failed reading {stem}: {e}")
         return None
 
     # Decode PNG shape quickly
@@ -80,13 +78,10 @@ def make_example(stem: str):
         if inside_count < 2:
             continue
 
-        # Valid object → normalize and store
+        # Valid object â†’ normalize and store
         classes.append(CLASSES[cname])
         xs.append(cx / w)
         ys.append(cy / h)
-
-    # Debug
-    print(f"🖼 {stem}: kept {len(classes)} objects")
 
     # Build TF Example
     features = {
@@ -117,7 +112,7 @@ def write_tfrecord(stems, out_path):
             if i % 20 == 0:
                 print(f"Progress: {i}/{len(stems)} (written {written})")
 
-    print(f"✔ Finished {out_path}: {written} records")
+    print(f"âœ” Finished {out_path}: {written} records")
     return written
 
 
@@ -134,15 +129,15 @@ split = int(len(pairs) * SPLIT_RATIO)
 train_pairs = pairs[:split]
 val_pairs   = pairs[split:]
 
-print(f"🔍 Found {len(pairs)} frames → {len(train_pairs)} train / {len(val_pairs)} val")
+print(f"ðŸ” Found {len(pairs)} frames â†’ {len(train_pairs)} train / {len(val_pairs)} val")
 
 # Write files
 train_written = write_tfrecord(train_pairs, OUT_TRAIN)
 val_written   = write_tfrecord(val_pairs, OUT_VAL)
 
-print(f"\n⏱ Done in {time.time()-start:.2f}s")
-print(f"📦 Train: {train_written}")
-print(f"📦 Val:   {val_written}")
+print(f"\nâ± Done in {time.time()-start:.2f}s")
+print(f"ðŸ“¦ Train: {train_written}")
+print(f"ðŸ“¦ Val:   {val_written}")
 
 # ----------------------------------------
 # Verify first record is readable
@@ -152,7 +147,7 @@ for raw in tfr.take(1):
     ex = tf.train.Example()
     ex.ParseFromString(raw.numpy())
     f = ex.features.feature
-    print("\n🔎 Verification sample:")
+    print("\nðŸ”Ž Verification sample:")
     print("  classes:", list(f["objects/classes"].int64_list.value))
     print("  xs:", list(f["objects/xs"].float_list.value))
     print("  ys:", list(f["objects/ys"].float_list.value))

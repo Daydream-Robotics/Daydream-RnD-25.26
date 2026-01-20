@@ -2,34 +2,37 @@ import tensorflow as tf
 
 class NonAbsolutePeakAccuracy(tf.keras.metrics.Metric):
     """
+    FIXED: Handles background channel correctly
     Measures accuracy allowing spatial tolerance (within N grid cells).
     """
     def __init__(self, tolerance=1, threshold=0.1, name='nonabs_peak_acc', **kwargs):
         super().__init__(name=name, **kwargs)
-        self.tolerance = tolerance  # Grid cells of tolerance
+        self.tolerance = tolerance
         self.threshold = threshold
         self.correct = self.add_weight(name='correct', initializer='zeros')
         self.total = self.add_weight(name='total', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        # Find ground truth peaks
+        # y_true has NUM_CLASSES channels (no bg)
+        # y_pred has NUM_CLASSES + 1 channels (with bg at end)
+        
+        num_fg_classes = tf.shape(y_true)[-1]
+        
+        # Find ground truth peaks (any foreground class)
         gt_peaks = tf.reduce_max(y_true, axis=-1)  # [B, H, W]
         peak_mask = tf.cast(gt_peaks > self.threshold, tf.float32)
         
-        # Get predicted class at each location
-        pred_class = tf.argmax(y_pred, axis=-1)  # [B, H, W]
+        # Get predicted class (including background)
+        pred_probs = tf.nn.softmax(y_pred, axis=-1)
+        pred_class = tf.argmax(pred_probs, axis=-1)  # [B, H, W]
+        
+        # Get true class (foreground only)
         true_class = tf.argmax(y_true, axis=-1)  # [B, H, W]
         
-        # For each peak, check if ANY nearby prediction matches
-        batch_size = tf.shape(y_true)[0]
-        height = tf.shape(y_true)[1]
-        width = tf.shape(y_true)[2]
-        
-        # This is simplified - for each peak pixel, we check if class matches
-        # within tolerance. For full implementation, you'd need spatial pooling.
-        
-        # Simple version: apply max pooling to dilate the "correct" regions
-        matches = tf.cast(tf.equal(pred_class, true_class), tf.float32)
+        # Check matches (pred must match true class AND not be background)
+        bg_idx = tf.cast(num_fg_classes, pred_class.dtype)
+        is_not_bg = tf.cast(pred_class != bg_idx, tf.float32)
+        matches = tf.cast(tf.equal(pred_class, true_class), tf.float32) * is_not_bg
         
         # Dilate matches by tolerance using max pooling
         if self.tolerance > 0:
@@ -56,8 +59,10 @@ class NonAbsolutePeakAccuracy(tf.keras.metrics.Metric):
         self.correct.assign(0.0)
         self.total.assign(0.0)
 
+
 class PeakDetectionAccuracy(tf.keras.metrics.Metric):
     """
+    FIXED: Handles background channel correctly
     Measures classification accuracy only at true peak centers.
     """
     def __init__(self, threshold=0.1, name='peak_accuracy', **kwargs):
@@ -67,19 +72,21 @@ class PeakDetectionAccuracy(tf.keras.metrics.Metric):
         self.total = self.add_weight(name='total', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        # Find TRUE PEAKS in ground truth (local maxima above threshold)
-        # We use max across classes to find ANY object peak
-        gt_peaks = tf.reduce_max(y_true, axis=-1)  # [B, H, W]
+        num_fg_classes = tf.shape(y_true)[-1]
         
-        # Consider only strong peaks as ground truth
+        # Find TRUE PEAKS in ground truth
+        gt_peaks = tf.reduce_max(y_true, axis=-1)  # [B, H, W]
         peak_mask = tf.cast(gt_peaks > self.threshold, tf.float32)
         
         # Get predicted and true classes
-        pred_class = tf.argmax(y_pred, axis=-1)
+        pred_probs = tf.nn.softmax(y_pred, axis=-1)
+        pred_class = tf.argmax(pred_probs, axis=-1)
         true_class = tf.argmax(y_true, axis=-1)
         
-        # Check if prediction matches ground truth
-        matches = tf.cast(tf.equal(pred_class, true_class), tf.float32)
+        # Check if prediction matches (and is not background)
+        bg_idx = tf.cast(num_fg_classes, pred_class.dtype)
+        is_not_bg = tf.cast(pred_class != bg_idx, tf.float32)
+        matches = tf.cast(tf.equal(pred_class, true_class), tf.float32) * is_not_bg
         
         # Only count matches at peak locations
         correct = matches * peak_mask
@@ -97,7 +104,8 @@ class PeakDetectionAccuracy(tf.keras.metrics.Metric):
 
 class HeatmapPrecision(tf.keras.metrics.Metric):
     """
-    Precision: Of confident predictions, how many are correct?
+    FIXED: Handles background channel correctly
+    Precision: Of confident foreground predictions, how many are correct?
     """
     def __init__(self, threshold=0.25, name='heatmap_precision', **kwargs):
         super().__init__(name=name, **kwargs)
@@ -106,28 +114,32 @@ class HeatmapPrecision(tf.keras.metrics.Metric):
         self.predicted_positives = self.add_weight(name='pp', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
+        num_fg_classes = tf.shape(y_true)[-1]
+        
         # Convert logits to probabilities
         pred_probs = tf.nn.softmax(y_pred, axis=-1)
         
-        # Get max probability for each pixel
+        # Predicted class + confidence
+        pred_class = tf.argmax(pred_probs, axis=-1)
         max_prob = tf.reduce_max(pred_probs, axis=-1)
         
-        # Confident predictions (lower threshold for multi-class)
-        pred_positive = tf.cast(max_prob > self.threshold, tf.float32)
-        
-        # Check if predicted class matches ground truth class
-        pred_class = tf.argmax(y_pred, axis=-1)
+        # Ground truth class and presence
         true_class = tf.argmax(y_true, axis=-1)
-        correct = tf.cast(tf.equal(pred_class, true_class), tf.float32)
-        
-        # Only count where GT has ANY activation (not just peaks)
         gt_present = tf.cast(tf.reduce_max(y_true, axis=-1) > 0.01, tf.float32)
         
-        # True positives: correct AND confident AND gt present
+        # Background index
+        bg_idx = tf.cast(num_fg_classes, pred_class.dtype)
+        
+        # Count as prediction only if confident AND foreground (not bg)
+        is_foreground_pred = tf.cast(pred_class != bg_idx, tf.float32)
+        pred_positive = tf.cast(max_prob > self.threshold, tf.float32) * is_foreground_pred
+        
+        # Check if predicted class matches ground truth class
+        correct = tf.cast(tf.equal(pred_class, true_class), tf.float32)
         tp = correct * pred_positive * gt_present
         
         self.true_positives.assign_add(tf.reduce_sum(tp))
-        self.predicted_positives.assign_add(tf.reduce_sum(pred_positive) + 1e-8)
+        self.predicted_positives.assign_add(tf.reduce_sum(pred_positive))
 
     def result(self):
         return self.true_positives / (self.predicted_positives + 1e-8)
@@ -135,6 +147,7 @@ class HeatmapPrecision(tf.keras.metrics.Metric):
     def reset_state(self):
         self.true_positives.assign(0.0)
         self.predicted_positives.assign(0.0)
+
 
 class OffsetMAE(tf.keras.metrics.Metric):
     """
@@ -146,10 +159,10 @@ class OffsetMAE(tf.keras.metrics.Metric):
         self.count = self.add_weight(name='count', initializer='zeros')
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        # Mask: only compute error where offsets are non-zero (objects exist)
+        # Mask: only compute error where offsets are non-zero
         mask = tf.cast(tf.reduce_sum(tf.abs(y_true), axis=-1) > 0, tf.float32)
         
-        # Compute absolute error per channel (dx, dy)
+        # Compute absolute error per channel
         error = tf.abs(y_pred - y_true)
         
         # Average over channels to get per-pixel error
@@ -184,7 +197,7 @@ class OffsetAccuracy(tf.keras.metrics.Metric):
         mask = tf.cast(tf.reduce_sum(tf.abs(y_true), axis=-1) > 0, tf.float32)
         
         # Euclidean distance between predicted and true offset
-        error = tf.sqrt(tf.reduce_sum(tf.square(y_pred - y_true), axis=-1))
+        error = tf.sqrt(tf.reduce_sum(tf.square(y_pred - y_true), axis=-1) + 1e-8)
         
         # Count predictions within threshold
         within_threshold = tf.cast(error <= self.threshold, tf.float32)

@@ -1,6 +1,39 @@
 import tensorflow as tf
 import keras
 
+# -------
+# Focal Softmax With Background Class and Per-Pixel Weights
+# Logits: [B,H,W,C] C = 3 (red, blue, bg)
+# y_true: [B,H,W,C] one-hot or soft
+# fg_mask: [B,H,W] 1 where object exists (any foreground), otherwise 0 (background)
+# -------
+def _focal_softmax_dense_bg(logits, y_true, fg_mask, alpha_fg=0.75, alpha_bg=0.25, gamma=2.0, neg_weight=1.0, reduction="mean", eps=1e-8):
+    y_true = tf.clip_by_value(y_true, 0.0, 1.0)
+    den = tf.reduce_sum(y_true, axis=-1, keepdims=True) + eps
+    y_true = y_true / den
+    
+    probs = tf.nn.softmax(logits, axis=-1)
+    
+    ce = tf.nn.softmax_cross_entropy_with_logits(labels=y_true, logits=logits)
+    p_t = tf.reduce_sum(probs * y_true, axis=-1)
+    
+    focal = tf.pow(1.0 - tf.clip_by_value(p_t, eps, 1.0), gamma)
+    
+    #alpha balance fg vs bg
+    alpha = fg_mask * alpha_fg + (1.0 - fg_mask) * alpha_bg
+    
+    # extra down weight on bg pixels
+    weight = fg_mask * 1.0 + (1.0 - fg_mask) * neg_weight
+    
+    loss = alpha * focal * ce * weight # [B,H,W]
+    
+    if reduction == "mean":
+        denom = tf.reduce_sum(weight) + eps
+        return tf.reduce_sum(loss) / denom
+    elif reduction == "sum":
+        return tf.reduce_sum(loss)
+    else:
+        return loss
 
 # --------------------------------
 # Focal Softmax Cross Entropy (Class Loss)
@@ -105,6 +138,36 @@ def total_loss(pred_heatmap=None, y_heatmap=None,
     return total
 
 class HeatmapLoss(tf.keras.losses.Loss):
+    def __init__(self, alpha_fg=0.75, alpha_bg=0.25, neg_weight=0.25, gamma=2.0, reduction="mean", name="HeatmapLoss"):
+        super().__init__(name=name)
+        self.alpha_fg = alpha_fg
+        self.alpha_bg = alpha_bg
+        self.gamma = gamma
+        self.neg_weight = neg_weight
+        self.reduction_type = reduction
+
+    def call(self, y_true, y_pred):
+        # Foreground presence mask
+        fg_strength = tf.reduce_max(y_true, axis=-1)
+        fg_mask = tf.cast(fg_strength > 0.01, tf.float32)
+        
+        # Build bg channel from fg heatmaps (assumes no occlusion)
+        fg_sum = tf.reduce_sum(y_true, axis=-1, keepdims=True)
+        bg = tf.clip_by_value(1.0 - fg_sum, 0.0, 1.0)
+        y_true_full = tf.concat([y_true, bg], axis=-1)
+        
+        return _focal_softmax_dense_bg(
+            logits=y_pred,
+            y_true = y_true_full,
+            fg_mask=fg_mask,
+            alpha_fg=self.alpha_fg,
+            alpha_bg=self.alpha_bg,
+            gamma=self.gamma,
+            neg_weight=self.neg_weight,
+            reduction=self.reduction_type
+        )
+
+class DeprecatedHeatmapLoss(tf.keras.losses.Loss):
     def __init__(self, alpha=0.25, gamma=2.0, reduction="mean", name="HeatmapLoss"):
         super().__init__(name=name)
         self.alpha = alpha

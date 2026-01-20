@@ -16,12 +16,18 @@ from pathlib import Path
 # --------------------------------
 
 # Train parameters
-BATCH_SIZE = 6
+BATCH_SIZE = 8
 EPOCHS = 100
 ROOT = Path(__file__).resolve().parents[1]
-TRAIN_PATH = ["/workspace/TensorFlow/Files/Daydream/train.tfrecord"]
-VAL_PATH = ["/workspace/TensorFlow/Files/Daydream/val.tfrecord"]
-INPUT_SHAPE = (512,512,3)
+TRAIN_PATHS = ["/home/agnco/Files/NDDS/TFrecords/trainBLUE2.tfrecord",
+               "/home/agnco/Files/NDDS/TFrecords/trainRED2.tfrecord",
+               "/home/agnco/Files/NDDS/TFrecords/trainREDBLUE.tfrecord",
+               "/home/agnco/Files/NDDS/TFrecords/trainBLUERED.tfrecord"]
+VAL_PATHS = ["/home/agnco/Files/NDDS/TFrecords/valTestBLUE2.tfrecord",
+               "/home/agnco/Files/NDDS/TFrecords/valTestRED2.tfrecord",
+               "/home/agnco/Files/NDDS/TFrecords/valTestREDBLUE.tfrecord",
+               "/home/agnco/Files/NDDS/TFrecords/valTestBLUERED.tfrecord"]
+INPUT_SHAPE = (256,256,3)
 STEPS_PER_EPOCH = 800
 VAL_STEPS_PER_EPOCH = 200
 
@@ -38,13 +44,13 @@ LAMBDA_OFFSET = 0.8
 # Datasets
 # --------------------------------
 
-train_ds = get_dataset(TRAIN_PATH, BATCH_SIZE, shuffle_buffer=256, training=True)
-val_ds = get_dataset(VAL_PATH, BATCH_SIZE, shuffle_buffer=256, training=False)
+train_ds = get_dataset(TRAIN_PATHS, BATCH_SIZE, shuffle_buffer=256, training=True)
+val_ds = get_dataset(VAL_PATHS, BATCH_SIZE, shuffle_buffer=256, training=False)
 
 # visualize_batch_heatmaps(
 #     train_ds,
 #     num_samples=100,
-#     output_dir="/home/agnco/TensorFlow/Daydream-RnD-25.26/Model/Visualized"
+#     output_dir="/home/agnco/TF/Daydream-RnD-25.26/Model/Visualized"
 # )
 
 # --------------------------------
@@ -64,8 +70,8 @@ def make_head(x, num_classes, name):
     return x
 
 # Generate Heatmap Heads
-p8_heatmap = make_head(p8, NUM_CLASSES, name="p8")
-p16_heatmap = make_head(p16, NUM_CLASSES, name="p16")
+p8_heatmap = make_head(p8, NUM_CLASSES + 1, name="p8")
+p16_heatmap = make_head(p16, NUM_CLASSES + 1, name="p16")
 
 # Offset Heads
 p8_offset = make_head(p8, 2, name="p8_off")
@@ -84,9 +90,9 @@ model = models.Model(
 )
 
 # DEBUG: Print actual output names
-print("\n🔍 Model output names:")
+print("\nðŸ” Model output names:")
 print(model.output_names)
-print("\n🔍 Model outputs:")
+print("\nðŸ” Model outputs:")
 for name, output in model.output.items():
     print(f"  {name}: {output}")
 

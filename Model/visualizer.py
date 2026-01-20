@@ -11,7 +11,7 @@ def visualize_allclass_heatmaps(img, p8_map, p16_map, save_path="/home/agnco/Ten
     with gridlines for both scales.
 
     Args:
-        img: (H, W, 3) float32 tensor or NumPy array (range 0–1 or 0–255)
+        img: (H, W, 3) float32 tensor or NumPy array (range 0-1 or 0-255)
         p8_map: (64, 64, num_classes) heatmap tensor for stride-8 output
         p16_map: (32, 32, num_classes) heatmap tensor for stride-16 output
         save_path: path to save the resulting visualization (default = debug_allclass_grid.png)
@@ -38,12 +38,12 @@ def visualize_allclass_heatmaps(img, p8_map, p16_map, save_path="/home/agnco/Ten
     plt.subplot(1, 3, 2)
     plt.imshow(img)
     plt.imshow(p8_all, alpha=0.5, cmap="jet",
-               extent=(0, 512, 512, 0), interpolation="bilinear")
+               extent=(0, 256, 256, 0), interpolation="bilinear")
 
     # Draw P8 gridlines (stride 8)
-    for i in range(0, 512, 8):
+    for i in range(0, 256, 8):
         plt.axvline(i, color='white', lw=0.4, alpha=0.3)
-    for j in range(0, 512, 8):
+    for j in range(0, 256, 8):
         plt.axhline(j, color='white', lw=0.4, alpha=0.3)
     plt.title("P8 All-Class Heatmap + Grid")
 
@@ -51,12 +51,12 @@ def visualize_allclass_heatmaps(img, p8_map, p16_map, save_path="/home/agnco/Ten
     plt.subplot(1, 3, 3)
     plt.imshow(img)
     plt.imshow(p16_all, alpha=0.5, cmap="jet",
-               extent=(0, 512, 512, 0), interpolation="bilinear")
+               extent=(0, 256, 256, 0), interpolation="bilinear")
 
     # Draw P16 gridlines (stride 16)
-    for i in range(0, 512, 16):
+    for i in range(0, 256, 16):
         plt.axvline(i, color='white', lw=0.4, alpha=0.3)
-    for j in range(0, 512, 16):
+    for j in range(0, 256, 16):
         plt.axhline(j, color='white', lw=0.4, alpha=0.3)
     plt.title("P16 All-Class Heatmap + Grid")
 
@@ -80,8 +80,8 @@ def visualize_batch_heatmaps(dataset, num_samples=500, output_dir="/home/agnco/T
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
-    print(f"📁 Saving visualizations to: {output_dir}")
-    print(f"🎯 Processing {num_samples} samples...")
+    print(f"ðŸ“ Saving visualizations to: {output_dir}")
+    print(f"ðŸŽ¯ Processing {num_samples} samples...")
     
     sample_count = 0
     
@@ -92,7 +92,7 @@ def visualize_batch_heatmaps(dataset, num_samples=500, output_dir="/home/agnco/T
         # Process each image in the batch
         for i in range(batch_size):
             if sample_count >= num_samples:
-                print(f"\n✅ Completed! Generated {sample_count} visualizations.")
+                print(f"\nâœ… Completed! Generated {sample_count} visualizations.")
                 return
             
             img = imgs[i]
@@ -112,7 +112,7 @@ def visualize_batch_heatmaps(dataset, num_samples=500, output_dir="/home/agnco/T
             if sample_count % 50 == 0:
                 print(f"  Progress: {sample_count}/{num_samples} ({100*sample_count/num_samples:.1f}%)")
     
-    print(f"\n✅ Processed all available samples: {sample_count} visualizations generated.")
+    print(f"\nâœ… Processed all available samples: {sample_count} visualizations generated.")
 
 
 def visualize_single_batch(imgs, labels, output_dir="/home/agnco/TensorFlow/Daydream-RnD-25.26/visualizations"):
@@ -140,4 +140,4 @@ def visualize_single_batch(imgs, labels, output_dir="/home/agnco/TensorFlow/Dayd
         
         visualize_allclass_heatmaps(img, p8_map, p16_map, save_path=str(save_path))
     
-    print(f"✅ Saved {batch_size} visualizations to {output_dir}")
+    print(f"âœ… Saved {batch_size} visualizations to {output_dir}")
