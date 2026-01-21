@@ -38,7 +38,7 @@ class CentroidDetector:
 
         # Class names
         self.class_names = class_names or [
-            "RedBall", "BlueBall", "LowLeg", "HighLeg"
+            "RedBall", "BlueBall"
         ]
         
         print("✅ Model Loaded")
@@ -50,6 +50,7 @@ class CentroidDetector:
     def _preprocess(self, pil_img):
         img = pil_img.convert("RGB").resize(self.input_size)
         arr = np.array(img, dtype=np.float32) / 255.0
+        # arr = np.array(img, dtype=np.uint8)
         arr = np.expand_dims(arr, axis=0)
         return arr
     
@@ -68,30 +69,32 @@ class CentroidDetector:
         print(f"Invoke {t_ms} ms")
        
         # Capture output
-        #p8_hm, p16_hm, p8_off, p16_off = [
-        #    self.interpreter.get_tensor(o["index"]) for o in self.output_details
-        #]
+        p8_hm, p8_off, p16_hm, p16_off = [
+           self.interpreter.get_tensor(o["index"]) for o in self.output_details
+        ]
 
-        # Capture all outputs first
-        outputs = [self.interpreter.get_tensor(o["index"]) for o in self.output_details]
+        # print(np.shape(p8_hm))
 
-        # Map outputs by shape to ensure correct assignment
-        # We assume 4 classes (depth=4) and 2 offsets (depth=2)
-        p8_hm = p16_hm = p8_off = p16_off = None
-
-        for out in outputs:
-            shape = out.shape
-            h, w, c = shape[1], shape[2], shape[3]
-            
-        #    # Stride 8 (Larger spatial dim, e.g., 64x64)
-            if h == self.input_size[0] // 8: 
-                if c == 4: p8_hm = out     # Heatmap
-                elif c == 2: p8_off = out  # Offsets
-            
-            # Stride 16 (Smaller spatial dim, e.g., 32x32)
-            elif h == self.input_size[0] // 16:
-                if c == 4: p16_hm = out    # Heatmap
-                elif c == 2: p16_off = out # Offsets
+        # # # Capture all outputs first
+        # outputs = [self.interpreter.get_tensor(o["index"]) for o in self.output_details]
+        #
+        # # Map outputs by shape to ensure correct assignment
+        # # We assume 4 classes (depth=4) and 2 offsets (depth=2)
+        # p8_hm = p16_hm = p8_off = p16_off = None
+        #
+        # for out in outputs:
+        #     shape = out.shape
+        #     h, w, c = shape[1], shape[2], shape[3]
+        #
+        # #    # Stride 8 (Larger spatial dim, e.g., 64x64)
+        #     if h == self.input_size[0] // 16:
+        #         if c == 4: p8_hm = out     # Heatmap
+        #         elif c == 2: p8_off = out  # Offsets
+        #
+        #     # Stride 16 (Smaller spatial dim, e.g., 32x32)
+        #     elif h == self.input_size[0] // 32:
+        #         if c == 4: p16_hm = out    # Heatmap
+        #         elif c == 2: p16_off = out # Offsets
 
         # Safety check
         if p8_hm is None or p8_off is None:
@@ -114,6 +117,9 @@ class CentroidDetector:
             h, w, c = hm.shape
             detections = []
             for cls in range(c):
+                if cls > 1:
+                    continue
+
                 classwise_map = hm[:, :, cls]
                 for _ in range(top_k):
                     idx = np.unravel_index(np.argmax(classwise_map), classwise_map.shape)
@@ -218,11 +224,12 @@ class CentroidDetector:
         return results
 
 
-MODEL = 'working_model_1.tflite'
+# MODEL = 'working_model_1.tflite'
+MODEL = 'best_model.tflite'
 detector = CentroidDetector(MODEL)
 
-def step(conf_threshold=0.3):
-    detections = detector.infer(conf_threshold, show_preview=True)
+def step(conf_threshold=0.3, show_preview=False):
+    detections = detector.infer(conf_threshold, show_preview)
 
     objects = []
 
@@ -241,18 +248,17 @@ def step(conf_threshold=0.3):
 
     return objects
 
+# while True:
+#     objects = step(show_preview=True)
 
-while True:
-    objects = step()
-
-    # Print detection summary
-    num_objects = len(objects)
-    print(f"\nDetected {num_objects} objects:")
-    for i, object in enumerate(objects):
-        # class_id = int(object["class_id"])
-        conf = object["conf"]
-        x = object["x"]
-        y = object["y"]
-        # class_name = detector.class_names[class_id]
-        class_name = object["class_id"]
-        print(f"  {i+1}. {class_name}: {conf:.2%} confidence at [{x:.0f}, {y:.0f}]") 
+#     # Print detection summary
+#     num_objects = len(objects)
+#     print(f"\nDetected {num_objects} objects:")
+#     for i, object in enumerate(objects):
+#         # class_id = int(object["class_id"])
+#         conf = object["conf"]
+#         x = object["x"]
+#         y = object["y"]
+#         # class_name = detector.class_names[class_id]
+#         class_name = object["class_id"]
+#         print(f"  {i+1}. {class_name}: {conf:.2%} confidence at [{x:.0f}, {y:.0f}]") 

@@ -1,6 +1,6 @@
 import serial
 import time
-import realtimeDetect
+import realtimeDetectCentroidHeatmap as realtimeDetect
 import numpy as np
 
 #VEX brain port '/dev/ttyACM1'
@@ -26,7 +26,7 @@ except serial.SerialException as e:
 def run_cnn_and_get_output():   
     object_found = [False] * 3
     data_string = ''
-    objects = realtimeDetect.step(0.25)
+    objects = realtimeDetect.step()
 
     if objects is None or len(objects) == 0:
         return 'N'
