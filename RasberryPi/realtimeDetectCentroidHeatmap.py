@@ -130,7 +130,7 @@ class CentroidDetector:
                     ox, oy = off[y, x]
                     cx = (x + ox) / w
                     cy = (y + oy) / h
-                    detections.append((self.class_names[cls], cx, cy, float(conf)))
+                    detections.append((cls, cx, cy, float(conf)))
                     classwise_map[y, x] = 0  # suppress this peak
             return detections
 
@@ -198,6 +198,7 @@ class CentroidDetector:
             for det in results:
                 # Unpack tuple: (class_name, cx, cy, conf)
                 label, cx, cy, conf = det 
+                label = self.class_names[label]
                 
                 # Convert normalized (0-1) to pixels
                 x = int(cx * img_w)
