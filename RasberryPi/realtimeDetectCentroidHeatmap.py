@@ -182,7 +182,7 @@ class CentroidDetector:
         print(f"Decode: {t2_ms:.1f} ms")
 
         t3 = time.perf_counter()
-        results = self._centroid_nms(x)
+        results = self._centroid_nms(x, dist_thresh=0.15)
         t3_ms = (time.perf_counter() - t3) * 1000
         print(f"NMS: {t3_ms:.1f} ms")
         
