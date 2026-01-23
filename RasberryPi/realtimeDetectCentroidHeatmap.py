@@ -66,7 +66,7 @@ class CentroidDetector:
         t0 = time.perf_counter()
         self.interpreter.invoke()
         t_ms = (time.perf_counter() - t0) * 1000
-        print(f"Invoke {t_ms} ms")
+        # print(f"Invoke {t_ms} ms")
        
         # Capture output
         p8_hm, p8_off, p16_hm, p16_off = [
@@ -161,7 +161,7 @@ class CentroidDetector:
         t0 = time.perf_counter()
         input_image = cammanager.getCamPIL()
         t0_ms = (time.perf_counter() - t0) * 1000
-        print(f"Img gra: {t0_ms:.1f} ms")
+        # print(f"Img gra: {t0_ms:.1f} ms")
 
         # enhancer = ImageEnhance.Color(input_image)
         # saturation_factor = 1.5
@@ -174,17 +174,17 @@ class CentroidDetector:
         t1 = time.perf_counter()
         x = self._predict(input_image)
         t1_ms = (time.perf_counter() - t1) * 1000
-        print(f"Predict: {t1_ms:.1f} ms")
+        # print(f"Predict: {t1_ms:.1f} ms")
 
         t2 = time.perf_counter()
         x = self._decode(x, conf_thresh=conf_thresh, top_k=5, use_multiscale=True)
         t2_ms = (time.perf_counter() - t2) * 1000
-        print(f"Decode: {t2_ms:.1f} ms")
+        # print(f"Decode: {t2_ms:.1f} ms")
 
         t3 = time.perf_counter()
         results = self._centroid_nms(x, dist_thresh=0.15)
         t3_ms = (time.perf_counter() - t3) * 1000
-        print(f"NMS: {t3_ms:.1f} ms")
+        # print(f"NMS: {t3_ms:.1f} ms")
         
         t4 = time.perf_counter()
         if show_preview:
@@ -218,10 +218,10 @@ class CentroidDetector:
             # Required to update the window (1ms delay)
             cv2.waitKey(1)
             t4_ms = (time.perf_counter() - t4) * 1000
-            print(f"Preview: {t4_ms:.1f} ms")
+            # print(f"Preview: {t4_ms:.1f} ms")
 
         t_ms= (time.perf_counter() - t0) * 1000
-        print(f"🔹 Inference + decode: {t_ms:.1f} ms ({1000 / t_ms:.1f} FPS)")
+        # print(f"🔹 Inference + decode: {t_ms:.1f} ms ({1000 / t_ms:.1f} FPS)")
         return results
 
 

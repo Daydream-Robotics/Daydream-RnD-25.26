@@ -26,7 +26,7 @@ except serial.SerialException as e:
 def run_cnn_and_get_output():   
     object_found = [False] * 3
     data_string = ''
-    objects = realtimeDetect.step()
+    objects = realtimeDetect.step(show_preview=True)
 
     if objects is None or len(objects) == 0:
         return 'N'
@@ -55,6 +55,7 @@ def main():
             if ser.in_waiting > 0:
                 #read and store '\n' terminated line from input stream
                 input_string = ser.readline().decode('utf-8').strip()
+                print(input_string)
 
                 # checks for request character
                 if input_string == 'A':
