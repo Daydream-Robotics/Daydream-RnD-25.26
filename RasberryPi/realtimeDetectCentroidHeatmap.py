@@ -236,14 +236,14 @@ def step(conf_threshold=0.3, show_preview=False):
 
     if detections:
         # sort detections by y
-        detections.sort(key=lambda x: x[3], reverse=True)
+        detections.sort(key=lambda x: x[2], reverse=True)
         
         for detection in detections:
             object = {
                 "class_id": detection[0],
-                "conf": detection[1],
-                "x": detection[2],
-                "y": detection[3]
+                "x": detection[1],
+                "y": detection[2],
+                "conf": detection[3],
             }
             objects.append(object)
 
