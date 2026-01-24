@@ -1,0 +1,12 @@
+[Unit]
+Description=Runs VEX Camera
+
+[Service]
+Type=simple
+RemainAfterExit=false
+User=adam
+WorkingDirectory=/home/adam/Daydream-Rnd-25.26/RasberryPi
+ExecStart=/usr/bin/bash /home/adam/Daydream-Rnd-25.26/RasberryPi/start_cam.sh
+
+[Install]
+WantedBy=multi-user.target
