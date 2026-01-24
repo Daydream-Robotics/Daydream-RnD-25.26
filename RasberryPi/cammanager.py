@@ -1,13 +1,17 @@
 # UCF7 Daydream
 # Purpose: Configure camera and return live images
 from picamera2 import Picamera2
-from libcamera import controls
+from libcamera import controls, Transform
 import numpy as np
 
 picam2 = Picamera2() # creates a camera object
-# picam2.video_configuration.main.size = (640, 640) # sets the image dimensions
-picam2.video_configuration.controls.FrameRate = 120 # sets the video frame rate
-picam2.configure("video") # sets camera mode (allows for faster frame retrieval)
+config = picam2.create_video_configuration(
+    main={"format": "RGB888"},
+    # main={"size": (640, 640), "format": "RGB888"},
+    transform=Transform.Rot90,  # Rotates hardware read-out
+    controls={"FrameRate": 120}
+)
+picam2.configure(config) # sets camera configuration
 picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous}) # sets autofocus mode
 picam2.start() # starts camera object
 
