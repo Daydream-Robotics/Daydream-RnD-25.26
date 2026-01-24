@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 # -------------------------
 # CONFIG
 # -------------------------
-MODEL_PATH = "/workspace/TensorFlow/Daydream-RnD-25.26/WORKING_MODEL_1.keras"
+# MODEL_PATH = "/workspace/TensorFlow/Daydream-RnD-25.26/WORKING_MODEL_1.keras"
+MODEL_PATH = "/workspace/TensorFlow/Daydream-RnD-25.26/256Model1.keras"
 IMG_PATH = "/workspace/TensorFlow/Files/Daydream/Photos/Field/000002.png"
 CLASS_TARGET = 0      # RedBall
 CONF_THRESH = 0.9
@@ -25,7 +26,7 @@ model = models.load_model(MODEL_PATH, compile=False)
 # PREPROCESS
 # -------------------------
 img = Image.open(IMG_PATH).convert("RGB")
-img_resized = img.resize((512, 512))
+img_resized = img.resize((256, 256))
 arr = np.array(img_resized) / 255.0
 arr = arr.astype(np.float32)[None, ...]
 

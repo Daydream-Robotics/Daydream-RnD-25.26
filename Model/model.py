@@ -72,7 +72,7 @@ def backbone(input_shape):
     # TAP
     p8 = x
 
-    x = _repeat_bottlenecks(x, 6, 160, 1, 2, name_prefix="bneck_7") # 40x40x128 in 20x20x160 out
+    x = _repeat_bottlenecks(x, 4, 160, 1, 2, name_prefix="bneck_7") # 40x40x128 in 20x20x160 out
     p16 = x
 
     return models.Model(inputs, [p8, p16], name="backbone")

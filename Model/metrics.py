@@ -125,7 +125,7 @@ class HeatmapPrecision(tf.keras.metrics.Metric):
         
         # Ground truth class and presence
         true_class = tf.argmax(y_true, axis=-1)
-        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1) > 0.01, tf.float32)
+        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1) > 0.3, tf.float32)
         
         # Background index
         bg_idx = tf.cast(num_fg_classes, pred_class.dtype)
@@ -213,3 +213,47 @@ class OffsetAccuracy(tf.keras.metrics.Metric):
     def reset_state(self):
         self.correct.assign(0.0)
         self.total.assign(0.0)
+
+class Recall(tf.keras.metrics.Metric):
+
+    def __init__(self, threshold, name='class_recall', **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.threshold = threshold
+        self.actual_pos = self.add_weight(name='actual_pos', initializer='zeros')
+        self.true_pos = self.add_weight(name='true_pos', initializer='zeros')
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+
+        # convert logits to probs
+        pred_probs = tf.nn.softmax(y_pred, axis=-1)
+
+        # Get the predicted class
+        pred_class = tf.argmax(pred_probs, axis=-1) # gets the highest class softmax
+        pred_conf = tf.reduce_max(pred_probs, axis=-1) # gets the highest prediction max
+
+        # Get true class
+        true_class = tf.argmax(y_true, axis=-1)
+        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1) > 0.4, tf.float32)
+
+        # background index
+        bg_idx = tf.cast(tf.shape(pred_probs)[-1] - 1, tf.int64)
+
+        # count pred positives
+        pred_positive_grid = tf.cast(tf.logical_and(pred_conf > self.threshold, pred_class != bg_idx), tf.float32)
+
+        # True pos per cell
+        correct_class = tf.cast(pred_class == true_class, tf.float32)
+        tp = gt_present * pred_positive_grid * correct_class
+
+        self.actual_pos.assign_add(tf.reduce_sum(gt_present))
+        self.true_pos.assign_add(tf.reduce_sum(tp))
+
+    def result(self):
+        return tf.math.divide_no_nan(self.true_pos, self.actual_pos)
+    
+    def reset_states(self):
+        self.actual_pos.assign(0.0)
+        self.true_pos.assign(0.0)
+
+
+

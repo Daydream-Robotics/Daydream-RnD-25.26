@@ -3,7 +3,7 @@ import datetime, os
 from keras import layers, models, optimizers, callbacks
 from model import backbone
 from Loss import HeatmapLoss, OffsetLoss
-from metrics import NonAbsolutePeakAccuracy, PeakDetectionAccuracy, HeatmapPrecision, OffsetMAE, OffsetAccuracy
+from metrics import NonAbsolutePeakAccuracy, PeakDetectionAccuracy, HeatmapPrecision, OffsetMAE, OffsetAccuracy, Recall
 from visualizer import visualize_batch_heatmaps, visualize_single_batch
 import matplotlib.pyplot as plt
 from dataloader import get_dataset, NUM_CLASSES
@@ -19,14 +19,14 @@ from pathlib import Path
 BATCH_SIZE = 8
 EPOCHS = 100
 ROOT = Path(__file__).resolve().parents[1]
-TRAIN_PATHS = ["/home/agnco/Files/NDDS/TFrecords/trainBLUE2.tfrecord",
-               "/home/agnco/Files/NDDS/TFrecords/trainRED2.tfrecord",
-               "/home/agnco/Files/NDDS/TFrecords/trainREDBLUE.tfrecord",
-               "/home/agnco/Files/NDDS/TFrecords/trainBLUERED.tfrecord"]
-VAL_PATHS = ["/home/agnco/Files/NDDS/TFrecords/valTestBLUE2.tfrecord",
-               "/home/agnco/Files/NDDS/TFrecords/valTestRED2.tfrecord",
-               "/home/agnco/Files/NDDS/TFrecords/valTestREDBLUE.tfrecord",
-               "/home/agnco/Files/NDDS/TFrecords/valTestBLUERED.tfrecord"]
+TRAIN_PATHS = ["/workspace/TensorFlow/Files/trainBLUE2.tfrecord",
+               "/workspace/TensorFlow/Files/trainRED2.tfrecord",
+               "/workspace/TensorFlow/Files/trainREDBLUE.tfrecord",
+               "/workspace/TensorFlow/Files/trainBLUERED.tfrecord"]
+VAL_PATHS = ["/workspace/TensorFlow/Files/valTestBLUE2.tfrecord",
+               "/workspace/TensorFlow/Files/valTestRED2.tfrecord",
+               "/workspace/TensorFlow/Files/valTestREDBLUE.tfrecord",
+               "/workspace/TensorFlow/Files/valTestBLUERED.tfrecord"]
 INPUT_SHAPE = (256,256,3)
 STEPS_PER_EPOCH = 800
 VAL_STEPS_PER_EPOCH = 200
@@ -34,8 +34,10 @@ VAL_STEPS_PER_EPOCH = 200
 # Loss parameters
 ALPHA = 0.25
 GAMMA = 2.0
-DELTA = 1.0
+DELTA = 1.25
 REDUCTION = "mean" # "mean", "sum", or "none"
+
+# LAMBDAS - Cur best: 2.0, 0.8
 LAMBDA_CLS = 2.0
 LAMBDA_OFFSET = 0.8
 
@@ -103,8 +105,8 @@ for name, output in model.output.items():
 model.compile(
     optimizer=optimizers.Adam(learning_rate=6e-5, clipvalue=1.0), # og 3e-5
     loss={
-        "p8": HeatmapLoss(),
-        "p16": HeatmapLoss(),
+        "p8": HeatmapLoss(neg_weight=.25), # original neg weight = .25
+        "p16": HeatmapLoss(neg_weight=.25),
         "p8_off": OffsetLoss(delta=DELTA),     
         "p16_off": OffsetLoss(delta=DELTA)
     },
@@ -115,8 +117,8 @@ model.compile(
         "p16_off": LAMBDA_OFFSET
     },
     metrics={
-        "p8": [NonAbsolutePeakAccuracy(2, threshold=0.1, name="acc"), HeatmapPrecision(name='prec')],
-        "p16": [NonAbsolutePeakAccuracy(1, threshold=0.1, name="acc"), HeatmapPrecision(name='prec')],
+        "p8": [NonAbsolutePeakAccuracy(2, threshold=0.6, name="acc"), HeatmapPrecision(name='prec'), Recall(0.3, name='rec')],
+        "p16": [NonAbsolutePeakAccuracy(1, threshold=0.6, name="acc"), HeatmapPrecision(name='prec'), Recall(0.3, name='rec')],
         "p8_off": [OffsetMAE(name='mae'), OffsetAccuracy(threshold=0.3, name='acc')],
         "p16_off": [OffsetMAE(name='mae'), OffsetAccuracy(threshold=0.3, name='acc')]
     }

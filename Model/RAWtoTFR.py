@@ -5,10 +5,10 @@ from pathlib import Path
 # ----------------------------------------
 # CONFIG
 # ----------------------------------------
-DATA_DIR = Path("/home/agnco/Files/NDDS/redblue")
+DATA_DIR = Path("/workspace/TensorFlow/Files/Daydream/Photos/Field")
 
-OUT_TRAIN = "/home/agnco/Files/NDDS/TFrecords/trainREDBLUE.tfrecord"
-OUT_VAL   = "/home/agnco/Files/NDDS/TFrecords/valTestREDBLUE.tfrecord"
+OUT_TRAIN = "/workspace/TensorFlow/Files/Daydream/2classtrain.tfrecord"
+OUT_VAL   = "/workspace/TensorFlow/Files/Daydream/2classval.tfrecord"
 
 SPLIT_RATIO = 0.8
 
@@ -129,15 +129,15 @@ split = int(len(pairs) * SPLIT_RATIO)
 train_pairs = pairs[:split]
 val_pairs   = pairs[split:]
 
-print(f"ðŸ” Found {len(pairs)} frames â†’ {len(train_pairs)} train / {len(val_pairs)} val")
+print(f"Found {len(pairs)} frames â†’ {len(train_pairs)} train / {len(val_pairs)} val")
 
 # Write files
 train_written = write_tfrecord(train_pairs, OUT_TRAIN)
 val_written   = write_tfrecord(val_pairs, OUT_VAL)
 
-print(f"\nâ± Done in {time.time()-start:.2f}s")
-print(f"ðŸ“¦ Train: {train_written}")
-print(f"ðŸ“¦ Val:   {val_written}")
+print(f"\nDone in {time.time()-start:.2f}s")
+print(f"Train: {train_written}")
+print(f"Val:   {val_written}")
 
 # ----------------------------------------
 # Verify first record is readable
@@ -147,7 +147,7 @@ for raw in tfr.take(1):
     ex = tf.train.Example()
     ex.ParseFromString(raw.numpy())
     f = ex.features.feature
-    print("\nðŸ”Ž Verification sample:")
+    print("\nVerification sample:")
     print("  classes:", list(f["objects/classes"].int64_list.value))
     print("  xs:", list(f["objects/xs"].float_list.value))
     print("  ys:", list(f["objects/ys"].float_list.value))
