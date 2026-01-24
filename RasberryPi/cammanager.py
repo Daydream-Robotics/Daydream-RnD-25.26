@@ -17,7 +17,7 @@ picam2.start() # starts camera object
 
 # this just returns the most recent frame
 def getCamPIL():
-    image = picam2.capture_array("main")
+    image = picam2.capture_image("main")
     image = image.rotate(90, expand=True)
     return image
 
