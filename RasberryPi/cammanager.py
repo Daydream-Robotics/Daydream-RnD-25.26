@@ -6,7 +6,7 @@ import numpy as np
 
 picam2 = Picamera2() # creates a camera object
 config = picam2.create_video_configuration(
-    main={"format": "RGB888"},
+    # main={"format": "RGB888"},
     main={"size": (640, 640), "format": "RGB888"},
     # transform=Transform.Rot90,  # Rotates hardware read-out
     controls={"FrameRate": 120}
