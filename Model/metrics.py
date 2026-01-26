@@ -251,7 +251,7 @@ class Recall(tf.keras.metrics.Metric):
     def result(self):
         return tf.math.divide_no_nan(self.true_pos, self.actual_pos)
     
-    def reset_states(self):
+    def reset_state(self):
         self.actual_pos.assign(0.0)
         self.true_pos.assign(0.0)
 
