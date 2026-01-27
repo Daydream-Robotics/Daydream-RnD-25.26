@@ -225,8 +225,9 @@ class CentroidDetector:
         return results
 
 
-# MODEL = 'working_model_1.tflite'
-MODEL = 'best_model.tflite'
+# MODEL = 'best_model.tflite'
+MODEL = 'INSANE_model.tflite'
+# MODEL = 'HigherNeg1.tflite'
 detector = CentroidDetector(MODEL)
 
 def step(conf_threshold=0.3, show_preview=False):
