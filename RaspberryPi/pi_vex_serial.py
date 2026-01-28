@@ -27,7 +27,7 @@ except serial.SerialException as e:
 def run_cnn_and_get_output():   
     object_found = [False] * 3
     data_string = ''
-    objects = realtimeDetect.step(show_preview=True)
+    objects = realtimeDetect.step(show_preview=False)
 
     if objects is None or len(objects) == 0:
         return 'N'
