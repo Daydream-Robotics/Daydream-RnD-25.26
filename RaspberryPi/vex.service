@@ -6,6 +6,8 @@ Type=simple
 User=adam
 WorkingDirectory=/home/adam/Daydream-RnD-25.26/RaspberryPi
 ExecStart=/usr/bin/bash /home/adam/Daydream-RnD-25.26/RaspberryPi/startVex.sh
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
