@@ -174,7 +174,73 @@ def _to_heatmaps(img, data):
         "p8_off": off_p8,
         "p16_off": off_p16
     }
+    
+    
+# --------------------------------
+# Gaussian noise
+# Adds a bit of random noise across pixel values, good for teaching background
+# --------------------------------
 
+def _gaussian_noise(img, data, p=0.35, sigma=0.02):
+    if not p:
+        return img, data
+    
+    r = tf.random.uniform([])
+    def noised():
+        noise = tf.random.normal(tf.shape(img), mean=0.0, stddev=sigma, dtype=img.dtype)
+        return tf.clip_by_value(img + noise, 0.0, 1.0), data
+    
+    return tf.cond(r < p, noised, lambda: (img, data))
+
+# --------------------------------
+# Color Perturbations
+# Randomly adjusts color ion various ways across the image to get the model to be more reliant on shape priors
+# p = probability that the augmentation happens to an image (p=0.6 means 60% of images will get any given aug)
+# --------------------------------
+
+def _color_perturb(img, data, p=0.6, brightness=0.06, contrast=(0.90, 1.10), saturation=(0.90, 1.10), hue=0.02, gamma=(0.90, 1.10)):
+    
+    r = tf.random.uniform([])
+
+    def aug():
+        x = img
+        # Keep jitter small to ensure red and blue are never swapped
+        x = tf.image.random_brightness(x, max_delta=brightness)
+        x = tf.image.random_contrast(x, lower=contrast[0], upper=contrast[1])
+        x = tf.image.random_saturation(x, lower=saturation[0], upper=saturation[1])
+        x = tf.image.random_hue(x, max_delta=hue)
+        
+        x = tf.clip_by_value(x, 0.0, 1.0)
+
+        # Gamma jitter (helps dissociate brightness from color)
+        g = tf.random.uniform([], gamma[0], gamma[1])
+        x = tf.image.adjust_gamma(x, gamma=g)
+
+        x = tf.clip_by_value(x, 0.0, 1.0)
+        return x, data
+
+    return tf.cond(r < p, aug, lambda: (img, data))
+
+# -------------------------------
+# JPEG Artifacts
+# Simulates camera compression/artifacts
+# -------------------------------
+
+def _jpeg_artifacts(img, data, p=0.15, quality_range=(60, 100)):
+    r = tf.random.uniform([])
+
+    def aug():
+        x_u8 = tf.image.convert_image_dtype(img, tf.uint8, saturate=True)
+        # takes min/max and does the random quality internally
+        x_u8 = tf.image.random_jpeg_quality(
+            x_u8,
+            min_jpeg_quality=quality_range[0],
+            max_jpeg_quality=quality_range[1],
+        )
+        x = tf.image.convert_image_dtype(x_u8, tf.float32)
+        return tf.clip_by_value(x, 0.0, 1.0), data
+
+    return tf.cond(r < p, aug, lambda: (img, data))
 
 # --------------------------------
 # Full Dataset Builder
@@ -197,6 +263,11 @@ def get_dataset(tfrecord_paths, batch_size, shuffle_buffer=256, training=True, c
     
     # Parse records
     ds = ds.map(_parse_tfrecord, num_parallel_calls=tf.data.AUTOTUNE)
+    
+    # Generate gaussian noise
+    if training: ds = ds.map(lambda img, data: _gaussian_noise(img, data, p=0.35, sigma=0.02))
+    if training: ds = ds.map(lambda img, data: _color_perturb(img, data, p=0.6))
+    if training: ds = ds.map(lambda img, data: _jpeg_artifacts(img, data, p=0.15))
     
     # Optional caching (only if your dataset fits in RAM)
     if cache:
