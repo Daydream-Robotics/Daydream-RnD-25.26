@@ -265,7 +265,7 @@ def get_dataset(tfrecord_paths, batch_size, shuffle_buffer=256, training=True, c
     ds = ds.map(_parse_tfrecord, num_parallel_calls=tf.data.AUTOTUNE)
     
     # Generate gaussian noise
-    if training: ds = ds.map(lambda img, data: _gaussian_noise(img, data, p=0.35, sigma=0.02))
+    if training: ds = ds.map(lambda img, data: _gaussian_noise(img, data, p=0.7, sigma=0.04)) # p = 0.35, sigma = 0.02
     if training: ds = ds.map(lambda img, data: _color_perturb(img, data, p=0.6))
     if training: ds = ds.map(lambda img, data: _jpeg_artifacts(img, data, p=0.15))
     
