@@ -6,6 +6,21 @@ from PIL import Image, ImageEnhance
 import time, cammanager
 import cv2
 # from tensorflow.lite.python.interpreter import load_delegate
+    
+
+       ###########
+    ###           ###
+  ##                 ##
+ #                     #
+#########################
+#    MODEL GRAVEYARD    #
+# --------------------- #
+# best_model.tflite     #
+# INSANE_model.tflite   #
+# BGObjectsBest.tflite  #
+# HigherNeg1.tflite     #
+#########################
+
 
 class CentroidDetector:
     
@@ -224,16 +239,11 @@ class CentroidDetector:
         # print(f"🔹 Inference + decode: {t_ms:.1f} ms ({1000 / t_ms:.1f} FPS)")
         return results
 
+MODEL = 'NoisyModel.tflite'
 
-# MODEL = 'best_model.tflite'
+detector = CentroidDetector(f"TfliteModels/{MODEL}")
 
-# MODEL = 'INSANE_model.tflite'
-MODEL = 'BGObjectsBest.tflite'
-
-# MODEL = 'HigherNeg1.tflite'
-detector = CentroidDetector(MODEL)
-
-def step(conf_threshold=0.3, show_preview=False):
+def step(conf_threshold=0.6, show_preview=False):
     detections = detector.infer(conf_threshold, show_preview)
 
     objects = []
