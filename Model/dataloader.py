@@ -46,105 +46,126 @@ def _generate_gaussian_2d(size, sigma):
     return tf.exp(-((xx-cx)**2 + (yy-cy)**2) / (2.0*sigma**2))
 
 def _draw_heatmap(classes, xs, ys, out_hw, num_classes=NUM_CLASSES, sigma=SIGMA):
+    """
+    FIXED: Handles empty object arrays (background-only images) without hanging
+    """
     H, W = out_hw
+    num_objects = tf.shape(classes)[0]
     
-    g_size = int(6 * sigma + 1)
-    half = g_size // 2
-    pad = half
-    heatmap = tf.zeros((H + 2*pad, W + 2*pad, num_classes), dtype=tf.float32)
-    kernel = _generate_gaussian_2d((g_size, g_size), sigma)
+    # Use tf.cond to handle empty case gracefully in graph mode
+    def empty_heatmap():
+        return tf.zeros((H, W, num_classes), dtype=tf.float32)
+    
+    def draw_objects():
+        g_size = int(6 * sigma + 1)
+        half = g_size // 2
+        pad = half
+        local_heatmap = tf.zeros((H + 2*pad, W + 2*pad, num_classes), dtype=tf.float32)
+        kernel = _generate_gaussian_2d((g_size, g_size), sigma)
 
-    for i in tf.range(tf.shape(classes)[0]):
-        cls = classes[i]
-        x_norm = tf.clip_by_value(xs[i], 0.0, 1.0)
-        y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
+        for i in tf.range(num_objects):
+            cls = classes[i]
+            x_norm = tf.clip_by_value(xs[i], 0.0, 1.0)
+            y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
 
-        # FIXED: Better coordinate mapping
-        # Maps [0, 1] to [0, W-1] continuously, then rounds
-        gx_float = x_norm * tf.cast(W - 1, tf.float32)
-        gy_float = y_norm * tf.cast(H - 1, tf.float32)
-        
-        gx = tf.cast(tf.round(gx_float), tf.int32)
-        gy = tf.cast(tf.round(gy_float), tf.int32)
+            # FIXED: Better coordinate mapping
+            # Maps [0, 1] to [0, W-1] continuously, then rounds
+            gx_float = x_norm * tf.cast(W - 1, tf.float32)
+            gy_float = y_norm * tf.cast(H - 1, tf.float32)
+            
+            gx = tf.cast(tf.round(gx_float), tf.int32)
+            gy = tf.cast(tf.round(gy_float), tf.int32)
 
-        # Already in valid range [0, W-1] and [0, H-1]
-        gx = tf.clip_by_value(gx, 0, W - 1)
-        gy = tf.clip_by_value(gy, 0, H - 1)
+            # Already in valid range [0, W-1] and [0, H-1]
+            gx = tf.clip_by_value(gx, 0, W - 1)
+            gy = tf.clip_by_value(gy, 0, H - 1)
 
-        gx_pad = gx + pad
-        gy_pad = gy + pad
+            gx_pad = gx + pad
+            gy_pad = gy + pad
 
-        x0 = gx_pad - half
-        y0 = gy_pad - half
-        x1 = gx_pad + half + 1
-        y1 = gy_pad + half + 1
+            x0 = gx_pad - half
+            y0 = gy_pad - half
+            x1 = gx_pad + half + 1
+            y1 = gy_pad + half + 1
 
-        kx0 = tf.maximum(0, -x0)
-        ky0 = tf.maximum(0, -y0)
-        kx1 = g_size - tf.maximum(0, x1 - (W + 2*pad))
-        ky1 = g_size - tf.maximum(0, y1 - (H + 2*pad))
+            kx0 = tf.maximum(0, -x0)
+            ky0 = tf.maximum(0, -y0)
+            kx1 = g_size - tf.maximum(0, x1 - (W + 2*pad))
+            ky1 = g_size - tf.maximum(0, y1 - (H + 2*pad))
 
-        x0 = tf.maximum(0, x0)
-        y0 = tf.maximum(0, y0)
-        x1 = tf.minimum(W + 2*pad, x1)
-        y1 = tf.minimum(H + 2*pad, y1)
+            x0 = tf.maximum(0, x0)
+            y0 = tf.maximum(0, y0)
+            x1 = tf.minimum(W + 2*pad, x1)
+            y1 = tf.minimum(H + 2*pad, y1)
 
-        patch = kernel[ky0:ky1, kx0:kx1]
-        ph = tf.shape(patch)[0]
-        pw = tf.shape(patch)[1]
+            patch = kernel[ky0:ky1, kx0:kx1]
+            ph = tf.shape(patch)[0]
+            pw = tf.shape(patch)[1]
 
-        yy = tf.range(y0, y0 + ph, dtype=tf.int32)
-        xx = tf.range(x0, x0 + pw, dtype=tf.int32)
+            yy = tf.range(y0, y0 + ph, dtype=tf.int32)
+            xx = tf.range(x0, x0 + pw, dtype=tf.int32)
 
-        yy = tf.expand_dims(yy, 1)
-        xx = tf.expand_dims(xx, 0)
+            yy = tf.expand_dims(yy, 1)
+            xx = tf.expand_dims(xx, 0)
 
-        yy_grid = tf.broadcast_to(yy, [ph, pw])
-        xx_grid = tf.broadcast_to(xx, [ph, pw])
+            yy_grid = tf.broadcast_to(yy, [ph, pw])
+            xx_grid = tf.broadcast_to(xx, [ph, pw])
 
-        coords = tf.stack([yy_grid, xx_grid, tf.fill([ph, pw], cls)], axis=-1)
-        coords = tf.reshape(coords, [-1, 3])
-        values = tf.reshape(patch, [-1])
+            coords = tf.stack([yy_grid, xx_grid, tf.fill([ph, pw], cls)], axis=-1)
+            coords = tf.reshape(coords, [-1, 3])
+            values = tf.reshape(patch, [-1])
 
-        heatmap = tf.tensor_scatter_nd_max(heatmap, coords, values)
+            local_heatmap = tf.tensor_scatter_nd_max(local_heatmap, coords, values)
 
-    heatmap = heatmap[pad:pad+H, pad:pad+W, :]
-    return heatmap
+        return local_heatmap[pad:pad+H, pad:pad+W, :]
+    
+    # Return empty heatmap if no objects, otherwise draw them
+    return tf.cond(num_objects > 0, draw_objects, empty_heatmap)
 
 
 def _draw_offset_map(xs, ys, out_hw):
     """
     FIXED: Uses same coordinate mapping as heatmap for consistency
+    FIXED: Handles empty object arrays without hanging
     """
     H, W = out_hw
-    offsets = tf.zeros((H, W, 2), dtype=tf.float32)
+    num_objects = tf.shape(xs)[0]
+    
+    # Early return for empty arrays
+    def empty_offsets():
+        return tf.zeros((H, W, 2), dtype=tf.float32)
+    
+    def draw_offsets():
+        local_offsets = tf.zeros((H, W, 2), dtype=tf.float32)
+        
+        for i in tf.range(num_objects):
+            x_norm = tf.clip_by_value(xs[i], 0.0, 1.0)
+            y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
+            
+            # FIXED: Same mapping as heatmap
+            gx_float = x_norm * tf.cast(W - 1, tf.float32)
+            gy_float = y_norm * tf.cast(H - 1, tf.float32)
+            
+            gx = tf.cast(tf.round(gx_float), tf.int32)
+            gy = tf.cast(tf.round(gy_float), tf.int32)
+            
+            gx = tf.clip_by_value(gx, 0, W - 1)
+            gy = tf.clip_by_value(gy, 0, H - 1)
+            
+            # Offset from rounded position
+            dx = gx_float - tf.cast(gx, tf.float32)
+            dy = gy_float - tf.cast(gy, tf.float32)
 
-    for i in tf.range(tf.shape(xs)[0]):
-        x_norm = tf.clip_by_value(xs[i], 0.0, 1.0)
-        y_norm = tf.clip_by_value(ys[i], 0.0, 1.0)
-        
-        # FIXED: Same mapping as heatmap
-        gx_float = x_norm * tf.cast(W - 1, tf.float32)
-        gy_float = y_norm * tf.cast(H - 1, tf.float32)
-        
-        gx = tf.cast(tf.round(gx_float), tf.int32)
-        gy = tf.cast(tf.round(gy_float), tf.int32)
-        
-        gx = tf.clip_by_value(gx, 0, W - 1)
-        gy = tf.clip_by_value(gy, 0, H - 1)
-        
-        # Offset from rounded position
-        dx = gx_float - tf.cast(gx, tf.float32)
-        dy = gy_float - tf.cast(gy, tf.float32)
+            local_offsets = tf.tensor_scatter_nd_update(
+                local_offsets, [[gy, gx, 0]], [dx]
+            )
+            local_offsets = tf.tensor_scatter_nd_update(
+                local_offsets, [[gy, gx, 1]], [dy]
+            )
 
-        offsets = tf.tensor_scatter_nd_update(
-            offsets, [[gy, gx, 0]], [dx]
-        )
-        offsets = tf.tensor_scatter_nd_update(
-            offsets, [[gy, gx, 1]], [dy]
-        )
-
-    return offsets
+        return local_offsets
+    
+    return tf.cond(num_objects > 0, draw_offsets, empty_offsets)
 
 
 def _to_heatmaps(img, data):
@@ -174,7 +195,73 @@ def _to_heatmaps(img, data):
         "p8_off": off_p8,
         "p16_off": off_p16
     }
+    
+    
+# --------------------------------
+# Gaussian noise
+# Adds a bit of random noise across pixel values, good for teaching background
+# --------------------------------
 
+def _gaussian_noise(img, data, p=0.35, sigma=0.02):
+    if not p:
+        return img, data
+    
+    r = tf.random.uniform([])
+    def noised():
+        noise = tf.random.normal(tf.shape(img), mean=0.0, stddev=sigma, dtype=img.dtype)
+        return tf.clip_by_value(img + noise, 0.0, 1.0), data
+    
+    return tf.cond(r < p, noised, lambda: (img, data))
+
+# --------------------------------
+# Color Perturbations
+# Randomly adjusts color ion various ways across the image to get the model to be more reliant on shape priors
+# p = probability that the augmentation happens to an image (p=0.6 means 60% of images will get any given aug)
+# --------------------------------
+
+def _color_perturb(img, data, p=0.6, brightness=0.06, contrast=(0.90, 1.10), saturation=(0.90, 1.10), hue=0.02, gamma=(0.90, 1.10)):
+    
+    r = tf.random.uniform([])
+
+    def aug():
+        x = img
+        # Keep jitter small to ensure red and blue are never swapped
+        x = tf.image.random_brightness(x, max_delta=brightness)
+        x = tf.image.random_contrast(x, lower=contrast[0], upper=contrast[1])
+        x = tf.image.random_saturation(x, lower=saturation[0], upper=saturation[1])
+        x = tf.image.random_hue(x, max_delta=hue)
+        
+        x = tf.clip_by_value(x, 0.0, 1.0)
+
+        # Gamma jitter (helps dissociate brightness from color)
+        g = tf.random.uniform([], gamma[0], gamma[1])
+        x = tf.image.adjust_gamma(x, gamma=g)
+
+        x = tf.clip_by_value(x, 0.0, 1.0)
+        return x, data
+
+    return tf.cond(r < p, aug, lambda: (img, data))
+
+# -------------------------------
+# JPEG Artifacts
+# Simulates camera compression/artifacts
+# -------------------------------
+
+def _jpeg_artifacts(img, data, p=0.15, quality_range=(60, 100)):
+    r = tf.random.uniform([])
+
+    def aug():
+        x_u8 = tf.image.convert_image_dtype(img, tf.uint8, saturate=True)
+        # takes min/max and does the random quality internally
+        x_u8 = tf.image.random_jpeg_quality(
+            x_u8,
+            min_jpeg_quality=quality_range[0],
+            max_jpeg_quality=quality_range[1],
+        )
+        x = tf.image.convert_image_dtype(x_u8, tf.float32)
+        return tf.clip_by_value(x, 0.0, 1.0), data
+
+    return tf.cond(r < p, aug, lambda: (img, data))
 
 # --------------------------------
 # Full Dataset Builder
@@ -197,6 +284,11 @@ def get_dataset(tfrecord_paths, batch_size, shuffle_buffer=256, training=True, c
     
     # Parse records
     ds = ds.map(_parse_tfrecord, num_parallel_calls=tf.data.AUTOTUNE)
+    
+    # Generate gaussian noise
+    if training: ds = ds.map(lambda img, data: _gaussian_noise(img, data, p=0.7, sigma=0.04)) # p = 0.35, sigma = 0.02
+    if training: ds = ds.map(lambda img, data: _color_perturb(img, data, p=0.6))
+    if training: ds = ds.map(lambda img, data: _jpeg_artifacts(img, data, p=0.15))
     
     # Optional caching (only if your dataset fits in RAM)
     if cache:
