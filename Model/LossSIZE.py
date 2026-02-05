@@ -10,7 +10,7 @@ import datetime
 
 
 # --------------------------------
-# OUTDATED - DO NOT CALL
+# THIS FILE IS DEPRECATED - DO NOT CALL
 # --------------------------------
 
 

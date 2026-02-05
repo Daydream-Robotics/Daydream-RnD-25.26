@@ -138,8 +138,9 @@ def total_loss(pred_heatmap=None, y_heatmap=None,
     return total
 
 class HeatmapLoss(tf.keras.losses.Loss):
-    def __init__(self, alpha_fg=0.75, alpha_bg=0.25, neg_weight=0.25, gamma=2.0, reduction="mean", name="HeatmapLoss"):
+    def __init__(self, fg_thresh=0.05, alpha_fg=0.75, alpha_bg=0.25, neg_weight=0.25, gamma=2.0, reduction="mean", name="HeatmapLoss"):
         super().__init__(name=name)
+        self.fg_thresh = fg_thresh
         self.alpha_fg = alpha_fg
         self.alpha_bg = alpha_bg
         self.gamma = gamma
@@ -151,9 +152,16 @@ class HeatmapLoss(tf.keras.losses.Loss):
         fg_strength = tf.reduce_max(y_true, axis=-1)
         fg_mask = tf.cast(fg_strength > 0.01, tf.float32)
         
-        # Build bg channel from fg heatmaps (assumes no occlusion)
-        fg_sum = tf.reduce_sum(y_true, axis=-1, keepdims=True)
-        bg = tf.clip_by_value(1.0 - fg_sum, 0.0, 1.0)
+        # # Build bg channel from fg heatmaps (assumes no occlusion)
+        # fg_sum = tf.reduce_sum(y_true, axis=-1, keepdims=True)
+        # bg = tf.clip_by_value(1.0 - fg_sum, 0.0, 1.0)
+        # y_true_full = tf.concat([y_true, bg], axis=-1)
+        
+        # background targets > 0.01
+        bg = tf.cast(fg_strength <= self.fg_thresh, dtype=tf.float32)
+        bg = tf.expand_dims(bg, axis=-1)
+        
+        # concat
         y_true_full = tf.concat([y_true, bg], axis=-1)
         
         return _focal_softmax_dense_bg(
