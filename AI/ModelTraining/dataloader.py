@@ -10,6 +10,35 @@ SIGMA = 1.5 # Gaussian Radius
 LOG_PATH = "/home/agnco/TensorFlow/Daydream-RnD-25.26/debug_stamps.txt"
 
 
+# -------------------------------
+# Dataset Builder
+# -------------------------------
+def _build_ds(paths, AUTOTUNE, BLOCK_LENGTH, TRAIN_EXAMPLE_SHUFFLE, VAL_EXAMPLE_SHUFFLE, TOGGLE_VAL_SHUFFLE, BATCH_SIZE, training: bool):
+    ds_files = tf.data.Dataset.from_tensor_slices(paths)
+    if training:
+        ds_files = ds_files.shuffle(len(paths), reshuffle_each_iteration=True)
+        
+    ds = ds_files.interleave(
+        lambda f: tf.data.TFRecordDataset(f, num_parallel_reads=AUTOTUNE),
+        cycle_length=len(paths),
+        block_length=BLOCK_LENGTH,
+        num_parallel_calls=AUTOTUNE,
+        deterministic=not training
+    )
+    
+    # parse records
+    ds = ds.map(_parse_tfrecord, num_parallel_calls=AUTOTUNE)
+    
+    if training:
+        ds = ds.shuffle(TRAIN_EXAMPLE_SHUFFLE, reshuffle_each_iteration=True)
+    else:
+        ds = ds.shuffle(VAL_EXAMPLE_SHUFFLE, reshuffle_each_iteration=TOGGLE_VAL_SHUFFLE)   
+        
+    ds = ds.batch(batch_size=BATCH_SIZE, drop_remainder=training)
+    ds = ds.prefetch(AUTOTUNE)
+    return ds
+
+
 # --------------------------------
 # TFRecord Parser
 # DO NOT CALL
@@ -304,8 +333,8 @@ def get_dataset(tfrecord_paths, batch_size, shuffle_buffer=256, training=True, c
     # Generate heatmaps
     ds = ds.map(_to_heatmaps, num_parallel_calls=tf.data.AUTOTUNE)
     
-    # Batch and prefetch
-    ds = ds.batch(batch_size, drop_remainder=training)
-    ds = ds.prefetch(tf.data.AUTOTUNE)
+    # # Batch and prefetch
+    # ds = ds.batch(batch_size, drop_remainder=training)
+    # ds = ds.prefetch(tf.data.AUTOTUNE)
     
     return ds

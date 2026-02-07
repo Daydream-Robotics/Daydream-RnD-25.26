@@ -125,7 +125,7 @@ class HeatmapPrecision(tf.keras.metrics.Metric):
         
         # Ground truth class and presence
         true_class = tf.argmax(y_true, axis=-1)
-        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1) > 0.3, tf.float32)
+        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1)>0.05, tf.float32) # add in > 0.3 for the reduce max to only check on squares near circles
         
         # Background index
         bg_idx = tf.cast(num_fg_classes, pred_class.dtype)
@@ -233,7 +233,7 @@ class Recall(tf.keras.metrics.Metric):
 
         # Get true class
         true_class = tf.argmax(y_true, axis=-1)
-        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1) > 0.4, tf.float32)
+        gt_present = tf.cast(tf.reduce_max(y_true, axis=-1)>0.05, tf.float32) # add check of 0.3 on the reduce max to check on near balls only
 
         # background index
         bg_idx = tf.cast(tf.shape(pred_probs)[-1] - 1, tf.int64)

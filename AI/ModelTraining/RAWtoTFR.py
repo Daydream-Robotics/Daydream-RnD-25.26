@@ -5,10 +5,10 @@ from pathlib import Path
 # ----------------------------------------
 # CONFIG
 # ----------------------------------------
-DATA_DIR = Path("/workspace/TensorFlow/Files/Daydream/Photos/Field")
+DATA_DIR = Path("/home/agnco/Files/NDDS/Null")
 
-OUT_TRAIN = "/workspace/TensorFlow/Files/Daydream/2classtrain.tfrecord"
-OUT_VAL   = "/workspace/TensorFlow/Files/Daydream/2classval.tfrecord"
+OUT_TRAIN = "/home/agnco/Files/NDDS/TFrecords/trainNULL.tfrecord"
+OUT_VAL   = "/home/agnco/Files/NDDS/TFrecords/valTestNULL.tfrecord"
 
 SPLIT_RATIO = 0.8
 
