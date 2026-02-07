@@ -21,6 +21,7 @@ import cv2
 # HigherNeg1.tflite     #
 # NoisyModel.tflite     #
 # NoisyModel2.tflite    #
+# INSANE_model.tflite   #
 #########################
 
 
@@ -245,7 +246,7 @@ class CentroidDetector:
 MODEL = 'NoisyModel2.tflite'
 
 # MODEL = 'best_model.tflite'
-MODEL = '/home/adam/Daydream-RnD-25.26/RaspberryPi/INSANE_model.tflite'
+MODEL = '/home/adam/Daydream-RnD-25.26/RaspberryPi/TfliteModels/FGThresh1.tflite'
 # MODEL = 'HigherNeg1.tflite'
 detector = CentroidDetector(MODEL)
 
