@@ -246,7 +246,7 @@ class CentroidDetector:
 MODEL = 'NoisyModel2.tflite'
 
 # MODEL = 'best_model.tflite'
-MODEL = '/home/adam/Daydream-RnD-25.26/RaspberryPi/TfliteModels/FGThresh1.tflite'
+MODEL = '/home/adam/Daydream-RnD-25.26/AI/RaspberryPi/TfliteModels/FGThresh1.tflite'
 # MODEL = 'HigherNeg1.tflite'
 detector = CentroidDetector(MODEL)
 

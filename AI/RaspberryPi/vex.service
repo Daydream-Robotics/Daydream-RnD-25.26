@@ -4,8 +4,8 @@ Description=Runs Production Start
 [Service]
 Type=simple
 User=adam
-WorkingDirectory=/home/adam/Daydream-RnD-25.26/RaspberryPi
-ExecStart=/usr/bin/bash /home/adam/Daydream-RnD-25.26/AI/RaspberryPi/startVex.sh
+WorkingDirectory=/home/adam/Daydream-RnD-25.26/AI/RaspberryPi
+ExecStart=/usr/bin/bash -c '/home/adam/cam_venv/bin/python3 -u /home/adam/Daydream-RnD-25.26/AI/RaspberryPi/pi_vex_serial.py False > /home/adam/Pi.out 2>&1'
 Restart=always
 RestartSec=5
 
