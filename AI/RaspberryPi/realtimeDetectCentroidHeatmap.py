@@ -19,6 +19,9 @@ import cv2
 # INSANE_model.tflite   #
 # BGObjectsBest.tflite  #
 # HigherNeg1.tflite     #
+# NoisyModel.tflite     #
+# NoisyModel2.tflite    #
+# INSANE_model.tflite   #
 #########################
 
 
@@ -239,10 +242,11 @@ class CentroidDetector:
         # print(f"🔹 Inference + decode: {t_ms:.1f} ms ({1000 / t_ms:.1f} FPS)")
         return results
 
-MODEL = 'NoisyModel.tflite'
+# MODEL = 'NullModel1.tflite'
+MODEL = 'NoisyModel2.tflite'
 
 # MODEL = 'best_model.tflite'
-MODEL = '/home/adam/Daydream-RnD-25.26/RaspberryPi/INSANE_model.tflite'
+MODEL = '/home/adam/Daydream-RnD-25.26/RaspberryPi/TfliteModels/FGThresh1.tflite'
 # MODEL = 'HigherNeg1.tflite'
 detector = CentroidDetector(MODEL)
 
@@ -266,17 +270,17 @@ def step(conf_threshold=0.6, show_preview=False):
 
     return objects
 
-# while True:
-#     objects = step(show_preview=True)
+while True:
+    objects = step(show_preview=True)
 
-#     # Print detection summary
-#     num_objects = len(objects)
-#     print(f"\nDetected {num_objects} objects:")
-#     for i, object in enumerate(objects):
-#         # class_id = int(object["class_id"])
-#         conf = object["conf"]
-#         x = object["x"]
-#         y = object["y"]
-#         # class_name = detector.class_names[class_id]
-#         class_name = object["class_id"]
-#         print(f"  {i+1}. {class_name}: {conf:.2%} confidence at [{x:.0f}, {y:.0f}]") 
+    # Print detection summary
+    num_objects = len(objects)
+    print(f"\nDetected {num_objects} objects:")
+    for i, object in enumerate(objects):
+        # class_id = int(object["class_id"])
+        conf = object["conf"]
+        x = object["x"]
+        y = object["y"]
+        # class_name = detector.class_names[class_id]
+        class_name = object["class_id"]
+        print(f"  {i+1}. {class_name}: {conf:.2%} confidence at [{x:.0f}, {y:.0f}]") 
