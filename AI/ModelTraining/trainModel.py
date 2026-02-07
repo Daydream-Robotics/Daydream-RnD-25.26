@@ -157,7 +157,7 @@ early_stop_cb = callbacks.EarlyStopping(
 
 # Save Best Model
 checkpoint_cb = callbacks.ModelCheckpoint(
-    filepath="best_model.keras",
+    filepath="/KerasModels/best_model.keras",
     monitor="val_loss",
     mode="min",
     save_best_only=True
