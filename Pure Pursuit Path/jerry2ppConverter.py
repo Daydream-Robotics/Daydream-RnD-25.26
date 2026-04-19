@@ -75,6 +75,8 @@ inline std::vector<std::vector<Position>> raw_paths = {\n"
     
     # parse each path and save to cpp file
     for path_index, (raw_points, initial_heading) in enumerate(all_paths):
+        del raw_points[-1]
+
         cpp_output += f"    {{\n"
         formatted_points = []
 
