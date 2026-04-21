@@ -31,7 +31,7 @@ def convert_jerryio_to_robot(file_path):
             path_name = line.removeprefix("#PATH-POINTS-START").strip().upper().replace(' ', '_')
             if path_name in path_names:
                 return f"Error: Duplicate path name '{path_name}' found."
-            path_names.append(f"PATH_{path_name}")
+            path_names.append(path_name)
 
             # if there are saved points from a previous path, save to all_paths
             if current_raw_points:
