@@ -3,7 +3,7 @@ import argparse
 import math
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--file", type=str)
+parser.add_argument("--file", default='path.jerryio.txt', type=str, help="Use custom filename")
 args = parser.parse_args()
 
 def convert_jerryio_to_robot(file_path):
@@ -16,6 +16,7 @@ def convert_jerryio_to_robot(file_path):
 
     lines = file_content.strip().split('\n')
     
+    path_names = []
     all_paths = []
     current_raw_points = []
     current_heading = 0.0
@@ -27,6 +28,11 @@ def convert_jerryio_to_robot(file_path):
         
         # checks if the line is the start of a new path
         if "#PATH-POINTS-START" in line:
+            path_name = line.removeprefix("#PATH-POINTS-START").strip().upper().replace(' ', '_')
+            if path_name in path_names:
+                return f"Error: Duplicate path name '{path_name}' found."
+            path_names.append(f"PATH_{path_name}")
+
             # if there are saved points from a previous path, save to all_paths
             if current_raw_points:
                 all_paths.append((current_raw_points, current_heading))
@@ -49,7 +55,8 @@ def convert_jerryio_to_robot(file_path):
     if not all_paths:
         return "Error: No path points found in file."
 
-    cpp_output = "#pragma once\n\
+    enum_members = ",\n    ".join(path_names)
+    cpp_output = f"#pragma once\n\
 #include \"odometry.hpp\"\n\
 #include \"arclengthSplining.hpp\"\n\
 #include <vector>\n\
@@ -57,7 +64,11 @@ def convert_jerryio_to_robot(file_path):
 #ifndef PATHS_HPP\n\
 #define PATHS_HPP 3.14159265358979323846\n\
 \n\
-inline std::vector<std::vector<Position>> raw_paths = {\n"
+enum class PathName : uint32_t {{\n\
+    {enum_members}\n\
+}};\n\
+\n\
+inline std::vector<std::vector<Position>> raw_paths = {{\n"
 
     # Set robots orign and intial heading
     if all_paths[0]:
