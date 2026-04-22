@@ -64,7 +64,7 @@ def convert_jerryio_to_robot(file_path):
 #ifndef PATHS_HPP\n\
 #define PATHS_HPP 3.14159265358979323846\n\
 \n\
-enum class PathName : uint32_t {{\n\
+enum PathName {{\n\
     {enum_members}\n\
 }};\n\
 \n\
