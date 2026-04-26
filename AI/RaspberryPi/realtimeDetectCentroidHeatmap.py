@@ -171,6 +171,20 @@ class CentroidDetector:
                 if d[0] != best[0] or np.hypot(d[1] - best[1], d[2] - best[2]) > dist_thresh
             ]
         return keep
+
+    def _x_veto(self, dets, min_x=None, max_x=None, class_ids=None):
+        keep = []
+        for det in dets:
+            cls, cx, cy, conf = det
+            if class_ids is not None and cls not in class_ids:
+                keep.append(det)
+                continue
+            if min_x is not None and cx < min_x:
+                continue
+            if max_x is not None and cx > max_x:
+                continue
+            keep.append(det)
+        return keep
     
     # --------------------------
     # Inference Wrapper
@@ -203,6 +217,14 @@ class CentroidDetector:
         results = self._centroid_nms(x, dist_thresh=0.15)
         t3_ms = (time.perf_counter() - t3) * 1000
         # print(f"NMS: {t3_ms:.1f} ms")
+
+        if X_VETO_ENABLED:
+            results = self._x_veto(
+                results,
+                min_x=X_VETO_MIN_X,
+                max_x=X_VETO_MAX_X,
+                class_ids=X_VETO_CLASS_IDS,
+            )
         
         t4 = time.perf_counter()
         if show_preview:
@@ -248,6 +270,12 @@ MODEL = 'NoisyModel2.tflite'
 # MODEL = 'best_model.tflite'
 MODEL = '/home/adam/Daydream-RnD-25.26/AI/RaspberryPi/TfliteModels/FGThresh1.tflite'
 # MODEL = 'HigherNeg1.tflite'
+
+X_VETO_ENABLED = True
+X_VETO_MIN_X = 0.20
+X_VETO_MAX_X = 0.80
+X_VETO_CLASS_IDS = {1}
+
 detector = CentroidDetector(MODEL)
 
 def step(conf_threshold=0.6, show_preview=False):
